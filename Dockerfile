@@ -7,22 +7,25 @@ COPY . .
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 RUN npm run build
 
-# Stage 2: Install server production dependencies only
-FROM node:20-alpine AS server-deps
-WORKDIR /app
-COPY server/package*.json ./server/
-RUN cd server && npm ci --omit=dev
-
-# Stage 3: Runtime - Express serves both API and built frontend
+# Stage 2: Runtime - Express serves both API and built frontend
+# 不再分离 server-deps stage：在本阶段先装 Python/make/g++，再 npm ci --omit=dev
+# 这样 better-sqlite3 拿不到 prebuild 时也能本地编译。
 FROM node:20-alpine AS production
 WORKDIR /app
 ENV NODE_ENV=production
-# better-sqlite3 needs build tools / prebuilt for alpine; node:20-alpine ships prebuilt binaries
+# better-sqlite3 编译/链接所需的工具链
+# python3 / make / g++ 用于 node-gyp 兜底编译；sqlite 头文件由 better-sqlite3 自带
+# 同时安装后端生产依赖（保持层缓存：只要 server/package*.json 未变就复用）
+COPY server/package*.json ./server/
+# prebuild-install 网络偶发超时，重试一次；仍失败时由 node-gyp 本地编译
 RUN apk add --no-cache python3 make g++ \
-    && npm install -g npm@10
+    && npm install -g npm@10 \
+    && cd server \
+    && (npm ci --omit=dev \
+        || (echo "--- npm ci failed once, retrying with --build-from-source ---" \
+            && npm ci --omit=dev --build-from-source))
 
-# Copy server runtime
-COPY --from=server-deps /app/server/node_modules ./server/node_modules
+# Copy server source (after deps installed so source changes don't bust the layer)
 COPY server/ ./server/
 
 # Copy frontend build
