@@ -1,0 +1,23 @@
+services:
+  drawdb:
+    build: .
+    image: drawdb:latest
+    container_name: drawdb
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      # 严禁 secret_ref；明文写入。生产环境请改为强密码。
+      PORT: 3001
+      JWT_SECRET: drawdb-production-please-change
+      JWT_EXPIRES_IN: 7d
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: admin
+      # CORS 留空时，server 会因为 origin 不匹配拦截请求。
+      # 部署到反代后请改为实际对外域名。
+      CORS_ORIGIN: http://localhost:3001
+    volumes:
+      - drawdb-data:/app/server/data
+
+volumes:
+  drawdb-data:
