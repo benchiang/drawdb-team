@@ -8,8 +8,15 @@ import {
   Tag,
   Empty,
   Spin,
+  Radio,
+  RadioGroup,
 } from "@douyinfe/semi-ui";
-import { IconDeleteStroked, IconUserAdd } from "@douyinfe/semi-icons";
+import {
+  IconDeleteStroked,
+  IconUserAdd,
+  IconEyeOpened,
+  IconEdit,
+} from "@douyinfe/semi-icons";
 import { useTranslation } from "react-i18next";
 import { IdContext } from "../../Workspace";
 import { MODAL } from "../../../data/constants";
@@ -26,7 +33,33 @@ function mapError(err) {
     return "不能把自己加为协作者";
   if (err?.response?.data?.error === "owner_only")
     return "只有所有者可以管理协作者";
+  if (err?.response?.data?.error === "invalid_permission")
+    return "权限值无效（只允许 read / edit）";
   return err?.response?.data?.error || err?.message || "操作失败";
+}
+
+const PERM_OPTIONS = [
+  { value: "read", label: "只读", icon: <IconEyeOpened /> },
+  { value: "edit", label: "可编辑", icon: <IconEdit /> },
+];
+
+function PermTag({ permission }) {
+  if (permission === "read") {
+    return (
+      <Tag size="small" color="grey">
+        <span className="inline-flex items-center gap-1">
+          <IconEyeOpened size="small" /> 只读
+        </span>
+      </Tag>
+    );
+  }
+  return (
+    <Tag size="small" color="green">
+      <span className="inline-flex items-center gap-1">
+        <IconEdit size="small" /> 可编辑
+      </span>
+    </Tag>
+  );
 }
 
 export default function Share({ setModal }) {
@@ -40,6 +73,10 @@ export default function Share({ setModal }) {
   const [searching, setSearching] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  // 邀请时给新协作者的权限（默认 edit）
+  const [newPermission, setNewPermission] = useState("edit");
+  // 单独追踪正在改权限的协作者 id，避免整列刷新闪烁
+  const [updatingId, setUpdatingId] = useState(null);
   const searchSeqRef = useRef(0);
 
   const isOwner = true; // Share Modal 只在 owner 视角下打开（ControlPanel 已是 owner 路径）
@@ -93,7 +130,6 @@ export default function Share({ setModal }) {
   }, [query, me?.id, items]);
 
   // 派生：只有当 query 严格匹配某个候选的 username 时，才视为"已选"
-  // 不依赖独立 pickedUser state，避免 onChange/onSelect 触发顺序导致状态错乱
   const pickedUser = useMemo(() => {
     const q = query.trim();
     if (!q) return null;
@@ -113,9 +149,8 @@ export default function Share({ setModal }) {
     setSubmitting(true);
     setError("");
     try {
-      await collaboratorsApi.add(diagramId, pickedUser.username);
+      await collaboratorsApi.add(diagramId, pickedUser.username, newPermission);
       Toast.success("已添加协作者");
-      // 添加成功后，把候选用户立即从 suggestions 中移除（防重复）
       setSuggestions((prev) => prev.filter((u) => u.id !== pickedUser.id));
       setQuery("");
       await reload();
@@ -123,6 +158,32 @@ export default function Share({ setModal }) {
       setError(mapError(err));
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleChangePermission = async (u, permission) => {
+    if (u.permission === permission || updatingId === u.id) return;
+    setUpdatingId(u.id);
+    // 乐观更新：先改本地状态，失败再回滚
+    const prevPerm = u.permission;
+    setItems((prev) =>
+      prev.map((c) => (c.id === u.id ? { ...c, permission } : c)),
+    );
+    try {
+      await collaboratorsApi.updatePermission(diagramId, u.id, permission);
+      Toast.success(
+        permission === "read"
+          ? `已设置 ${u.username} 为只读`
+          : `已设置 ${u.username} 为可编辑`,
+      );
+    } catch (err) {
+      // 回滚
+      setItems((prev) =>
+        prev.map((c) => (c.id === u.id ? { ...c, permission: prevPerm } : c)),
+      );
+      Toast.error(mapError(err));
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -160,9 +221,11 @@ export default function Share({ setModal }) {
         type="info"
         description={
           <div>
-            <div>协作者可对「<strong>{title}</strong>」进行查看与编辑。</div>
+            <div>
+              邀请其他用户协作「<strong>{title}</strong>」：可授予<strong>可编辑</strong>或<strong>只读</strong>权限。
+            </div>
             <div className="text-xs text-zinc-500 mt-1">
-              数据保存在本地 SQLite 中，所有人看到的都是同一份数据（最后保存者覆盖）。
+              数据保存在本地 SQLite 中，保存时所有协作者看到的是同一份数据（最后保存者覆盖）。
             </div>
           </div>
         }
@@ -170,53 +233,74 @@ export default function Share({ setModal }) {
       />
 
       {isOwner && (
-        <div className="flex gap-2">
-          <div className="flex-1">
-            <AutoComplete
-              value={query}
-              onChange={(v) => {
-                setQuery(v);
-                setError("");
-              }}
-              placeholder="输入用户名搜索（至少 1 个字符）"
-              disabled={submitting}
-              data={suggestions.map((u) => ({
-                value: u.username,
-                label: (
-                  <div className="flex items-center gap-2">
-                    <span className="text-zinc-800">{u.username}</span>
-                    {u.role === "admin" && (
-                      <Tag size="small" color="blue">
-                        admin
-                      </Tag>
-                    )}
-                  </div>
-                ),
-              }))}
-              emptyContent={
-                searching ? (
-                  <div className="flex items-center justify-center gap-2 py-2 text-zinc-500">
-                    <Spin size="small" /> 搜索中...
-                  </div>
-                ) : (
-                  <div className="text-center text-zinc-400 py-2 text-sm">
-                    没有匹配的用户
-                  </div>
-                )
-              }
-              filterLocal={false}
-              style={{ width: "100%" }}
-            />
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <AutoComplete
+                value={query}
+                onChange={(v) => {
+                  setQuery(v);
+                  setError("");
+                }}
+                placeholder="输入用户名搜索（至少 1 个字符）"
+                disabled={submitting}
+                data={suggestions.map((u) => ({
+                  value: u.username,
+                  label: (
+                    <div className="flex items-center gap-2">
+                      <span className="text-zinc-800">{u.username}</span>
+                      {u.role === "admin" && (
+                        <Tag size="small" color="blue">
+                          admin
+                        </Tag>
+                      )}
+                    </div>
+                  ),
+                }))}
+                emptyContent={
+                  searching ? (
+                    <div className="flex items-center justify-center gap-2 py-2 text-zinc-500">
+                      <Spin size="small" /> 搜索中...
+                    </div>
+                  ) : (
+                    <div className="text-center text-zinc-400 py-2 text-sm">
+                      没有匹配的用户
+                    </div>
+                  )
+                }
+                filterLocal={false}
+                style={{ width: "100%" }}
+              />
+            </div>
+            <Button
+              type="primary"
+              icon={<IconUserAdd />}
+              loading={submitting}
+              disabled={submitting || !pickedUser}
+              onClick={handleAdd}
+            >
+              邀请
+            </Button>
           </div>
-          <Button
-            type="primary"
-            icon={<IconUserAdd />}
-            loading={submitting}
-            disabled={submitting || !pickedUser}
-            onClick={handleAdd}
-          >
-            邀请
-          </Button>
+          <div className="flex items-center gap-3 px-1">
+            <span className="text-xs text-zinc-500">新协作者权限：</span>
+            <RadioGroup
+              type="button"
+              size="small"
+              value={newPermission}
+              onChange={(e) => setNewPermission(e.target.value)}
+              disabled={submitting}
+            >
+              {PERM_OPTIONS.map((opt) => (
+                <Radio key={opt.value} value={opt.value}>
+                  <span className="inline-flex items-center gap-1">
+                    {opt.icon}
+                    {opt.label}
+                  </span>
+                </Radio>
+              ))}
+            </RadioGroup>
+          </div>
         </div>
       )}
 
@@ -239,24 +323,50 @@ export default function Share({ setModal }) {
             {items.map((u) => (
               <li
                 key={u.id}
-                className="flex items-center justify-between px-3 py-2"
+                className="flex items-center justify-between gap-3 px-3 py-2"
               >
-                <div className="flex items-center gap-2">
-                  <span className="text-zinc-800">{u.username}</span>
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <span className="text-zinc-800 truncate">{u.username}</span>
                   {u.user_role === "admin" && (
                     <Tag size="small" color="blue">
                       admin
                     </Tag>
                   )}
+                  {!isOwner && <PermTag permission={u.permission} />}
                 </div>
-                <Button
-                  size="small"
-                  type="danger"
-                  icon={<IconDeleteStroked />}
-                  onClick={() => handleRemove(u)}
-                >
-                  移除
-                </Button>
+                <div className="flex items-center gap-2 shrink-0">
+                  {isOwner && (
+                    <RadioGroup
+                      type="button"
+                      size="small"
+                      value={u.permission}
+                      onChange={(e) => handleChangePermission(u, e.target.value)}
+                    >
+                      {PERM_OPTIONS.map((opt) => (
+                        <Radio
+                          key={opt.value}
+                          value={opt.value}
+                          disabled={updatingId === u.id}
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            {opt.icon}
+                            {opt.label}
+                          </span>
+                        </Radio>
+                      ))}
+                    </RadioGroup>
+                  )}
+                  {isOwner && (
+                    <Button
+                      size="small"
+                      type="danger"
+                      icon={<IconDeleteStroked />}
+                      onClick={() => handleRemove(u)}
+                    >
+                      移除
+                    </Button>
+                  )}
+                </div>
               </li>
             ))}
           </ul>

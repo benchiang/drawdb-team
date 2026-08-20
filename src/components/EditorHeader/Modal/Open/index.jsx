@@ -54,11 +54,15 @@ export default function Open({ selectedDiagramId, setSelectedDiagramId }) {
   );
 
   // 分区：本地图按 accessRole 分为「我的图 / 共享给我」；云端图暂归入「我的图」（无区分语义）
+  // accessRole: 'owner' | 'edit' | 'read' | null
   const { owned, shared } = useMemo(() => {
     const o = [];
     const s = [];
     for (const e of visible) {
-      if (e.source === SOURCE.cloud || e.accessRole !== "collab") {
+      if (
+        e.source === SOURCE.cloud ||
+        (e.accessRole !== "edit" && e.accessRole !== "read")
+      ) {
         o.push(e);
       } else {
         s.push(e);

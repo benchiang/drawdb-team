@@ -12,10 +12,10 @@ function TypeCell({ entry }) {
   );
 }
 
-function SharedBadge() {
+function SharedBadge({ text = "Shared" }) {
   return (
     <Tag size="small" color="violet">
-      Shared
+      {text}
     </Tag>
   );
 }
@@ -46,7 +46,8 @@ function useColumns({ showType, showOwner, currentUserId }) {
       render: ({ entry }) => (
         <div className="flex items-center gap-2">
           <span>{entry.name}</span>
-          {entry.accessRole === "collab" && <SharedBadge />}
+          {entry.accessRole === "edit" && <SharedBadge text="共享" />}
+          {entry.accessRole === "read" && <SharedBadge text="只读" />}
         </div>
       ),
     },

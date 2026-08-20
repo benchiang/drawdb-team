@@ -210,6 +210,16 @@ export default function WorkSpace({ forcedDiagramId } = {}) {
         setLastSaved(new Date().toLocaleString());
       } catch (err) {
         console.warn("update diagram failed:", err);
+        if (err?.response?.data?.error === "read_only") {
+          // 权限被改成只读后，强制把编辑器切到只读模式，避免持续失败
+          setLayout((prev) => ({ ...prev, readOnly: true }));
+          try {
+            const { Toast } = await import("@douyinfe/semi-ui");
+            Toast.warning("你对此图只有只读权限，已自动切换为只读模式");
+          } catch {
+            /* toast 不可用也不影响 */
+          }
+        }
         setSaveState(State.ERROR);
       }
     }
@@ -227,6 +237,7 @@ export default function WorkSpace({ forcedDiagramId } = {}) {
     transform,
     setSaveState,
     setLastSaved,
+    setLayout,
     database,
     enums,
     isDiagram,
@@ -350,8 +361,13 @@ export default function WorkSpace({ forcedDiagramId } = {}) {
       if (!diagram) return;
 
       setDiagramSource(source);
+      // 决定 readOnly：
+      //   - 本地图（accessRole 由 diagramsApi.get 返回）：read => 只读；owner/edit => 可写
+      //   - 云端图：仍按 canWrite 字段判断
       if (source === "local") {
-        setLayout((prev) => ({ ...prev, readOnly: false }));
+        const role = diagram.accessRole;
+        const readOnly = role === "read";
+        setLayout((prev) => ({ ...prev, readOnly }));
       } else if (typeof diagram.canWrite === "boolean") {
         setLayout((prev) => ({ ...prev, readOnly: !diagram.canWrite }));
       }

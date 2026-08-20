@@ -18,7 +18,7 @@ router.get("/", (req, res) => {
       `SELECT d.*, 'owner' AS access_role
          FROM diagrams d WHERE d.owner_id = ?
        UNION
-       SELECT d.*, 'collab' AS access_role
+       SELECT d.*, c.permission AS access_role
          FROM diagrams d
          JOIN diagram_collaborators c ON c.diagram_id = d.id
         WHERE c.user_id = ?
@@ -59,6 +59,10 @@ router.put("/:id", (req, res) => {
   const db = getDb();
   const role = diagramAccessOf(db, req.params.id, ownerOf(req));
   if (!role) return res.status(404).json({ error: "not_found" });
+  // 只读协作者不能保存图
+  if (role !== "owner" && role !== "edit") {
+    return res.status(403).json({ error: "read_only" });
+  }
   const row = diagramToRow({ ...req.body, diagramId: req.params.id });
   if (!row.name || !row.database) {
     return res.status(400).json({ error: "invalid_payload" });
@@ -73,7 +77,7 @@ router.put("/:id", (req, res) => {
          payload = @payload
      WHERE id = @id`,
   ).run(row);
-  const updated = db.prepare("SELECT * FROM diagrams WHERE id = ?").get(row.id);
+  const updated = db.prepare("SELECT * FROM diagrams WHERE id = @id").get({ id: row.id });
   res.json({ ...rowToDiagram(updated), accessRole: role });
 });
 

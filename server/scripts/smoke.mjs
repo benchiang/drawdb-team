@@ -202,8 +202,8 @@ try {
   const aliceGet = await http_("GET", "/api/diagrams/diag-admin-1", null, aliceToken);
   if (aliceGet.status !== 200)
     throw new Error("alice should GET shared diagram, got " + aliceGet.status);
-  if (aliceGet.body.accessRole !== "collab")
-    throw new Error("alice should have accessRole=collab");
+  if (aliceGet.body.accessRole !== "edit")
+    throw new Error("alice should have accessRole=edit");
   console.log("✓ alice can read shared diagram");
 
   // 13) alice 现在能 PUT 修改
@@ -223,6 +223,73 @@ try {
   if (alicePut.status !== 200)
     throw new Error("alice should PUT shared diagram, got " + alicePut.status);
   console.log("✓ alice can edit shared diagram");
+
+  // 13b) admin 把 alice 降为只读
+  const demoteRead = await http_(
+    "PATCH",
+    `/api/diagrams/diag-admin-1/collaborators/${alice.user.id}`,
+    { permission: "read" },
+    adminToken,
+  );
+  if (demoteRead.status !== 200)
+    throw new Error("PATCH permission should 200, got " + demoteRead.status);
+  const aliceGetRead = await http_("GET", "/api/diagrams/diag-admin-1", null, aliceToken);
+  if (aliceGetRead.body.accessRole !== "read")
+    throw new Error("alice should be read after PATCH, got " + aliceGetRead.body.accessRole);
+  console.log("✓ PATCH permission edit -> read works");
+
+  // 13c) 只读协作者 PUT 应被 403 拒
+  const alicePutRead = await http_(
+    "PUT",
+    "/api/diagrams/diag-admin-1",
+    {
+      name: "should be rejected",
+      database: "generic",
+      tables: [],
+      references: [],
+      notes: [],
+      areas: [],
+    },
+    aliceToken,
+  );
+  if (alicePutRead.status !== 403)
+    throw new Error("read-only PUT should 403, got " + alicePutRead.status);
+  if (alicePutRead.body?.error !== "read_only")
+    throw new Error("expected error=read_only, got " + JSON.stringify(alicePutRead.body));
+  console.log("✓ read-only collaborator is blocked from PUT");
+
+  // 13d) 把 alice 升回 edit
+  const promoteEdit = await http_(
+    "PATCH",
+    `/api/diagrams/diag-admin-1/collaborators/${alice.user.id}`,
+    { permission: "edit" },
+    adminToken,
+  );
+  if (promoteEdit.status !== 200)
+    throw new Error("PATCH permission back to edit failed, got " + promoteEdit.status);
+  console.log("✓ PATCH permission read -> edit works");
+
+  // 13e) 非 owner PATCH 应被 403 拒
+  const alicePatch = await http_(
+    "PATCH",
+    `/api/diagrams/diag-admin-1/collaborators/${alice.user.id}`,
+    { permission: "read" },
+    aliceToken,
+  );
+  if (alicePatch.status !== 403)
+    throw new Error("non-owner PATCH should 403, got " + alicePatch.status);
+  console.log("✓ non-owner cannot PATCH collaborator");
+
+  // 13f) 非法 permission 值应被 400 拒
+  const badPatch = await http_(
+    "PATCH",
+    `/api/diagrams/diag-admin-1/collaborators/${alice.user.id}`,
+    { permission: "admin" },
+    adminToken,
+  );
+  if (badPatch.status !== 400)
+    throw new Error("invalid permission should 400, got " + badPatch.status);
+  console.log("✓ invalid permission rejected");
 
   // 14) alice 在列表里能看到 diag-admin-1
   const aliceListAfter = await http_("GET", "/api/diagrams", null, aliceToken);
@@ -261,7 +328,10 @@ try {
   if (collabs.status !== 200 || collabs.body.items.length !== 1) {
     throw new Error("admin should see 1 collaborator, got: " + JSON.stringify(collabs.body));
   }
-  console.log("✓ admin lists collaborators");
+  if (collabs.body.items[0].permission !== "edit") {
+    throw new Error("alice should default to permission=edit, got " + collabs.body.items[0].permission);
+  }
+  console.log("✓ admin lists collaborators with permission=edit");
 
   // 18) 重复添加应 409
   const dup = await http_(

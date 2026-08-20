@@ -29,7 +29,10 @@ function formatTimestamp(value) {
 }
 
 function DiagramCard({ diagram, currentUserId, onOpen, onDelete }) {
-  const isShared = diagram.accessRole === "collab";
+  // accessRole: 'owner' | 'edit' | 'read'
+  // 非 owner（即 read/edit）都算"共享给我"
+  const isShared = diagram.accessRole === "edit" || diagram.accessRole === "read";
+  const isReadOnly = diagram.accessRole === "read";
   return (
     <div
       onClick={() => onOpen(diagram.diagramId)}
@@ -39,11 +42,18 @@ function DiagramCard({ diagram, currentUserId, onOpen, onDelete }) {
         <div className="font-semibold text-zinc-800 dark:text-zinc-100 truncate flex-1">
           {diagram.name || "Untitled"}
         </div>
-        {isShared && (
-          <Tag size="small" color="violet">
-            Shared
-          </Tag>
-        )}
+        <div className="flex items-center gap-1 shrink-0">
+          {isReadOnly && (
+            <Tag size="small" color="grey">
+              只读
+            </Tag>
+          )}
+          {isShared && !isReadOnly && (
+            <Tag size="small" color="violet">
+              共享
+            </Tag>
+          )}
+        </div>
       </div>
       <div className="flex items-center gap-2 text-xs text-zinc-500 mb-3">
         <Tag size="small" color="grey">
@@ -52,11 +62,7 @@ function DiagramCard({ diagram, currentUserId, onOpen, onDelete }) {
         <span>{formatTimestamp(diagram.lastModified)}</span>
       </div>
       <div className="flex items-center justify-between text-xs text-zinc-400">
-        <span>
-          {isShared
-            ? `共 ${diagram.tables?.length ?? 0} 张表`
-            : `${diagram.tables?.length ?? 0} 张表`}
-        </span>
+        <span>共 {diagram.tables?.length ?? 0} 张表</span>
         {!isShared && (
           <button
             className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 transition-opacity"
@@ -124,7 +130,8 @@ export default function Dashboard() {
     const o = [];
     const s = [];
     for (const d of items) {
-      if (d.accessRole === "collab") s.push(d);
+      // accessRole: 'owner' | 'edit' | 'read'
+      if (d.accessRole === "edit" || d.accessRole === "read") s.push(d);
       else o.push(d);
     }
     return { owned: o, shared: s };

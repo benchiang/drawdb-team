@@ -57,6 +57,7 @@ function migrate(db) {
     CREATE TABLE IF NOT EXISTS diagram_collaborators (
       diagram_id TEXT NOT NULL REFERENCES diagrams(id) ON DELETE CASCADE,
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      permission TEXT NOT NULL DEFAULT 'edit' CHECK(permission IN ('read', 'edit')),
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       PRIMARY KEY (diagram_id, user_id)
     );
@@ -67,6 +68,24 @@ function migrate(db) {
 
   // 兼容旧库：缺列就补上
   ensureColumn(db, "users", "role", "TEXT NOT NULL DEFAULT 'user'");
+  // 旧库 diagram_collaborators 没有 permission 列，迁移时补上并默认 'edit'
+  ensureColumn(
+    db,
+    "diagram_collaborators",
+    "permission",
+    "TEXT NOT NULL DEFAULT 'edit'",
+  );
+  // 旧库可能缺 CHECK 约束，尝试补加（重复添加会被 SQL 忽略或失败时跳过）
+  try {
+    db.exec(
+      `CREATE TRIGGER IF NOT EXISTS trg_collab_permission_check
+       BEFORE INSERT ON diagram_collaborators
+       FOR EACH ROW WHEN NEW.permission NOT IN ('read', 'edit')
+       BEGIN SELECT RAISE(ABORT, 'invalid permission'); END;`,
+    );
+  } catch {
+    /* ignore: 旧库已有数据可能不满足约束时不阻断启动 */
+  }
 
   // 把旧 diagrams/templates 中 owner_id 为 NULL 或 0 的记录，归到第一个 admin 名下
   // 仅在至少存在一个 admin 时迁移；否则保持原状等待 bootstrap
@@ -141,13 +160,22 @@ export function hasAnyUser(db) {
   return row.n > 0;
 }
 
-// 返回该用户对 diagram 的访问权：'owner' | 'collab' | null
+// 返回该用户对 diagram 的访问权：'owner' | 'edit' | 'read' | null
+/**
+ * 查询某用户对某图的访问角色：
+ *   - 'owner'：所有者，拥有一切权限
+ *   - 'edit' ：协作者，可读 + 可写
+ *   - 'read' ：协作者，只读
+ *   - null   ：无访问权
+ * 旧版固定返回 'collab'，已废弃。
+ */
 export function diagramAccessOf(db, diagramId, userId) {
   const row = db
     .prepare(
       `SELECT 'owner' AS role FROM diagrams WHERE id = ? AND owner_id = ?
        UNION
-       SELECT 'collab' AS role FROM diagram_collaborators WHERE diagram_id = ? AND user_id = ?`,
+       SELECT permission AS role FROM diagram_collaborators
+        WHERE diagram_id = ? AND user_id = ?`,
     )
     .get(diagramId, userId, diagramId, userId);
   return row?.role || null;
