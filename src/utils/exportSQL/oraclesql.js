@@ -1,5 +1,6 @@
 import { dbToTypes } from "../../data/datatypes";
 import {
+  buildFieldComment,
   parseDefault,
   uniqueConstraintClause,
   getFkColumnNames,
@@ -8,15 +9,22 @@ import {
 export function toOracleSQL(diagram) {
   return `${diagram.tables
     .map(
-      (table) =>
-        `${
+      (table) => {
+        const fieldComments = new Map();
+        table.fields.forEach((f) => fieldComments.set(f.id, buildFieldComment(f)));
+        return `${
           table.comment === "" ? "" : `/* ${table.comment} */\n`
         }CREATE TABLE "${table.name}" (\n${table.fields
           .map(
-            (field) =>
-              `${field.comment === "" ? "" : `\t-- ${field.comment}\n`}\t"${
-                field.name
-              }" ${field.type}${
+            (field) => {
+              const fc = fieldComments.get(field.id);
+              const fcLines = fc
+                ? fc
+                    .split("\n")
+                    .map((l) => `\t-- ${l}\n`)
+                    .join("")
+                : "";
+              return `${fcLines}\t"${field.name}" ${field.type}${
                 field.size !== undefined && field.size !== ""
                   ? "(" + field.size + ")"
                   : ""
@@ -31,7 +39,8 @@ export function toOracleSQL(diagram) {
                 !dbToTypes[diagram.database][field.type].hasCheck
                   ? ""
                   : ` CHECK(${field.check})`
-              }${field.comment ? ` -- ${field.comment}` : ""}`,
+              }`;
+            }
           )
           .join(",\n")}${
           table.fields.filter((f) => f.primary).length > 0
@@ -40,14 +49,15 @@ export function toOracleSQL(diagram) {
                 .map((f) => `"${f.name}"`)
                 .join(", ")})`
             : ""
-        }${uniqueConstraintClause(table, (s) => `"${s}"`)}\n)${table.comment ? ` -- ${table.comment}` : ""};\n${`\n${table.indices
+          }${uniqueConstraintClause(table, (s) => `"${s}"`)}\n)${table.comment ? ` -- ${table.comment}` : ""};\n${`\n${table.indices
           .map(
             (i) =>
               `\nCREATE ${i.unique ? "UNIQUE " : ""}INDEX "${i.name}"\nON "${table.name}" (${i.fields
                 .map((f) => `"${f}"`)
                 .join(", ")});`,
           )
-          .join("")}`}`,
+          .join("")}`}`;
+      }
     )
     .join("\n")}\n${diagram.references
     .map((r) => {

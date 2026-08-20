@@ -1,4 +1,5 @@
 import {
+  buildFieldComment,
   escapeQuotes,
   parseDefault,
   uniqueConstraintClause,
@@ -28,11 +29,15 @@ function parseType(field) {
 export function toMySQL(diagram) {
   return `${diagram.tables
     .map(
-      (table) =>
+      (table) => {
+        const fieldComments = new Map();
+        table.fields.forEach((f) => fieldComments.set(f.id, buildFieldComment(f)));
+        return (
         `CREATE TABLE IF NOT EXISTS \`${table.name}\` (\n${table.fields
           .map(
-            (field) =>
-              `\t\`${field.name}\` ${parseType(field)}${
+            (field) => {
+              const fc = fieldComments.get(field.id);
+              return `\t\`${field.name}\` ${parseType(field)}${
                 dbToTypes[DB.MYSQL][field.type]?.signed && field.unsigned
                   ? " UNSIGNED"
                   : ""
@@ -47,7 +52,8 @@ export function toMySQL(diagram) {
                 !dbToTypes[diagram.database][field.type].hasCheck
                   ? ""
                   : ` CHECK(${field.check})`
-              }${field.comment ? ` COMMENT '${escapeQuotes(field.comment)}'` : ""}`,
+              }${fc ? ` COMMENT '${escapeQuotes(fc)}'` : ""}`;
+            }
           )
           .join(",\n")}${
           table.fields.filter((f) => f.primary).length > 0
@@ -56,7 +62,7 @@ export function toMySQL(diagram) {
                 .map((f) => `\`${f.name}\``)
                 .join(", ")})`
             : ""
-        }${uniqueConstraintClause(table, (s) => `\`${s}\``)}\n)${table.comment ? ` COMMENT='${escapeQuotes(table.comment)}'` : ""};\n${`\n${table.indices
+          }${uniqueConstraintClause(table, (s) => `\`${s}\``)}\n)${table.comment ? ` COMMENT='${escapeQuotes(table.comment)}'` : ""};\n${`\n${table.indices
           .map(
             (i) =>
               `\nCREATE ${i.unique ? "UNIQUE " : ""}INDEX \`${
@@ -65,7 +71,9 @@ export function toMySQL(diagram) {
                 .map((f) => `\`${f}\``)
                 .join(", ")});`,
           )
-          .join("")}`}`,
+          .join("")}`}`
+        );
+      }
     )
     .join("\n")}\n${diagram.references
     .map((r) => {

@@ -1,7 +1,7 @@
 import { Cardinality, Constraint } from "../../data/constants";
 import { dbToTypes } from "../../data/datatypes";
 import i18n from "../../i18n/i18n";
-import { escapeQuotes } from "../exportSQL/shared";
+import { buildFieldComment, escapeQuotes } from "../exportSQL/shared";
 import { isFunction, isKeyword, getRelationshipFields } from "../utils";
 import {
   dbmlFieldSize,
@@ -77,11 +77,12 @@ function processComment(comment) {
 }
 
 function columnComment(field) {
-  if (!field.comment || field.comment.trim() === "") {
+  const text = buildFieldComment(field);
+  if (!text) {
     return "";
   }
 
-  return `note: ${processComment(field.comment)}`;
+  return `note: ${processComment(text)}`;
 }
 
 function enumBlock(name, values) {

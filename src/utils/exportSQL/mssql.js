@@ -1,4 +1,5 @@
 import {
+  buildFieldComment,
   parseDefault,
   escapeQuotes,
   uniqueConstraintClause,
@@ -79,9 +80,10 @@ export function toMSSQL(diagram) {
       );
 
       const columnCommentsSql = table.fields
-        .map((field) =>
-          generateAddExtendedPropertySQL(field.comment, table.name, field.name),
-        )
+        .map((field) => {
+          const fc = buildFieldComment(field);
+          return generateAddExtendedPropertySQL(fc, table.name, field.name);
+        })
         .join("");
 
       const indicesSql = table.indices

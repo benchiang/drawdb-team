@@ -46,6 +46,21 @@ export function exportFieldComment(comment) {
     .join("");
 }
 
+/**
+ * 把字段的 displayName 与 comment 合并为单一文本：
+ *   - displayName 优先（在前）
+ *   - 用 "; " 分隔
+ *   - 任一为空只输出另一项
+ *   - 都为空返回 ""
+ * 用于在导出 SQL/DBML 时把"显示名"与"注释"一并写入 COMMENT 字段。
+ */
+export function buildFieldComment(field) {
+  const display = (field?.displayName || "").trim();
+  const note = (field?.comment || "").trim();
+  if (display && note) return `${display}; ${note}`;
+  return display || note;
+}
+
 export function uniqueConstraintClause(table, quote) {
   const constraints = (table.uniqueConstraints || []).filter(
     (uc) => Array.isArray(uc.fields) && uc.fields.length > 0,

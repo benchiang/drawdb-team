@@ -1,4 +1,5 @@
 import {
+  buildFieldComment,
   exportFieldComment,
   getInlineFK,
   parseDefault,
@@ -11,22 +12,24 @@ export function toSqlite(diagram) {
   return diagram.tables
     .map((table) => {
       const inlineFK = getInlineFK(table, diagram);
+      const fieldComments = new Map();
+      table.fields.forEach((f) => fieldComments.set(f.id, buildFieldComment(f)));
       return `${
         table.comment === "" ? "" : `/* ${table.comment} */\n`
       }CREATE TABLE IF NOT EXISTS "${table.name}" (\n${table.fields
-        .map(
-          (field) =>
-            `${exportFieldComment(field.comment)}\t"${
-              field.name
-            }" ${field.type}${field.notNull ? " NOT NULL" : ""}${
-              field.unique ? " UNIQUE" : ""
-            }${field.default !== "" ? ` DEFAULT ${parseDefault(field, diagram.database)}` : ""}${
-              field.check === "" ||
-              !dbToTypes[diagram.database][field.type].hasCheck
-                ? ""
-                : ` CHECK(${field.check})`
-            }`,
-        )
+        .map((field) => {
+          const fc = fieldComments.get(field.id);
+          return `${fc ? exportFieldComment(fc) : ""}\t"${
+            field.name
+          }" ${field.type}${field.notNull ? " NOT NULL" : ""}${
+            field.unique ? " UNIQUE" : ""
+          }${field.default !== "" ? ` DEFAULT ${parseDefault(field, diagram.database)}` : ""}${
+            field.check === "" ||
+            !dbToTypes[diagram.database][field.type].hasCheck
+              ? ""
+              : ` CHECK(${field.check})`
+          }`;
+        })
         .join(",\n")}${
         table.fields.filter((f) => f.primary).length > 0
           ? `,\n\tPRIMARY KEY(${table.fields

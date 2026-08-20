@@ -120,6 +120,80 @@ function countWrappedLines(comment, contentWidth, maxLines) {
   return Math.min(maxLines, Math.max(1, lines));
 }
 
+// =====================================================================
+// 表格宽度测量：用 Canvas measureText 测文本宽度 + 显式累加 gap/padding/border，
+// 完全脱离 DOM 渲染。确保所有行内容都能铺开显示。
+// =====================================================================
+
+let _tableMeasureCtx = null;
+function getTableMeasureCtx() {
+  if (_tableMeasureCtx) return _tableMeasureCtx;
+  if (typeof document === "undefined") return null;
+  const ctx = document.createElement("canvas").getContext("2d");
+  _tableMeasureCtx = ctx;
+  return ctx;
+}
+
+function getBodyFont() {
+  if (typeof window === "undefined") return "ui-sans-serif, system-ui, sans-serif";
+  return (
+    window.getComputedStyle(document.body).fontFamily ||
+    "ui-sans-serif, system-ui, sans-serif"
+  );
+}
+
+const MONO_FONT =
+  "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace";
+
+/**
+ * 测一行的实际像素宽度。
+ * 真实渲染布局（与 Table.jsx 字段行严格对齐）：
+ *   [圆点 10px] + [gap-2 8px] + (displayName + " · " [gap-1 4px]) + [name] + [gap-1 4px] + [type 字体 mono]
+ *   + 左右 padding (px-2 = 8px*2) + border (border-2 = 2px*2)
+ */
+export function measureFieldRowWidth({ displayName, name, type, size, isPK, notNull }) {
+  const ctx = getTableMeasureCtx();
+  if (!ctx) return 0;
+  const bodyFont = getBodyFont();
+  let w = 0;
+  // 左侧：圆点 10px + gap-2 8px
+  w += 10 + 8;
+  // displayName + " · "（只在 displayName 存在时）
+  if (displayName) {
+    ctx.font = `400 italic 12px ${bodyFont}`;
+    w += ctx.measureText(displayName).width;
+    w += 4; // gap-1
+    ctx.font = `400 12px ${bodyFont}`;
+    w += ctx.measureText("·").width;
+    w += 4; // gap-1
+  }
+  // 字段名 name（默认 14px，正文）
+  ctx.font = `400 14px ${bodyFont}`;
+  w += ctx.measureText(name || "").width;
+  // 右侧类型 + (size)
+  let typeText = type || "";
+  if (size) typeText += `(${size})`;
+  if (typeText) {
+    w += 4; // gap-1
+    ctx.font = `400 14px ${MONO_FONT}`;
+    w += ctx.measureText(typeText).width;
+  }
+  // 字段行 padding（px-2 = 8px*2） + 整表 border（border-2 = 2px*2）
+  w += 8 * 2 + 2 * 2;
+  return w;
+}
+
+/** 测表头宽度：name + 左右 padding（px-3 = 12px*2）+ border（2px*2） */
+export function measureTableHeaderWidth(name) {
+  const ctx = getTableMeasureCtx();
+  if (!ctx) return 0;
+  const bodyFont = getBodyFont();
+  ctx.font = `700 14px ${bodyFont}`;
+  let w = ctx.measureText(name || "").width;
+  w += 12 * 2 + 2 * 2;
+  return w;
+}
+
 export function getCommentHeight(
   comment,
   containerWidth,

@@ -1,4 +1,5 @@
 import {
+  buildFieldComment,
   escapeQuotes,
   exportFieldComment,
   parseDefault,
@@ -71,11 +72,12 @@ export function toPostgres(diagram) {
         table.comment?.trim()
           ? `COMMENT ON TABLE "${table.name}" IS '${escapeQuotes(table.comment)}';`
           : "",
-        ...table.fields.map((field) =>
-          field.comment?.trim()
-            ? `COMMENT ON COLUMN "${table.name}"."${field.name}" IS '${escapeQuotes(field.comment)}';`
-            : "",
-        ),
+        ...table.fields.map((field) => {
+          const fc = buildFieldComment(field);
+          return fc
+            ? `COMMENT ON COLUMN "${table.name}"."${field.name}" IS '${escapeQuotes(fc)}';`
+            : "";
+        }),
       ]
         .filter(Boolean)
         .join("\n");

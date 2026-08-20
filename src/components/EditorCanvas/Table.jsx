@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Action,
   Tab,
@@ -46,6 +46,8 @@ import {
   getVisibleFieldEntries,
   getVisibleFields,
   getRelationshipFields,
+  measureFieldRowWidth,
+  measureTableHeaderWidth,
 } from "../../utils/utils";
 
 export default function Table({
@@ -56,9 +58,6 @@ export default function Table({
   setLinkingLine,
 }) {
   const [hoveredField, setHoveredField] = useState(null);
-  // 测量实际渲染宽度（按字段内容自适应），覆盖 settings.tableWidth 默认值
-  const innerRef = useRef(null);
-  const [measuredWidth, setMeasuredWidth] = useState(0);
   const { layout } = useLayout();
   const {
     database,
@@ -79,39 +78,46 @@ export default function Table({
     setBulkSelectedElements,
   } = useSelect();
 
-  useLayoutEffect(() => {
-    if (!innerRef.current) return;
-    const el = innerRef.current;
-    const measure = () => {
-      // scrollWidth = 实际内容宽度（含 overflow 内容），适合 fit-content 场景
-      const w = el.scrollWidth;
-      setMeasuredWidth((prev) => (prev !== w ? w : prev));
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [tableData.id, tableData.fields, tableData.comment, settings.showComments]);
+  // 用 Canvas measureText 测每行实际像素宽度 + 显式累加 gap/padding/border，
+  // 完全脱离 DOM 渲染，真实字段行布局见 measureFieldRowWidth 内注释。
+  const visibleFields = useMemo(
+    () => getVisibleFields(tableData, relationships),
+    [tableData, relationships],
+  );
+
+  const measuredWidth = useMemo(() => {
+    if (typeof document === "undefined") return settings.tableWidth;
+    const headerW = measureTableHeaderWidth(tableData.name);
+    let maxW = headerW;
+    visibleFields.forEach((f) => {
+      const w = measureFieldRowWidth({
+        displayName: f.displayName,
+        name: f.name,
+        type: f.type,
+        size: f.size,
+      });
+      if (w > maxW) maxW = w;
+    });
+    return Math.max(maxW, settings.tableWidth);
+  }, [tableData.name, visibleFields, settings.tableWidth]);
 
   const borderColor = useMemo(
     () => (settings.mode === "light" ? "border-zinc-300" : "border-zinc-600"),
     [settings.mode],
   );
 
+  // 表格宽 = 测量宽度（未测量完成时用 settings.tableWidth 兜底，保证初始有合理高度）
+  const tableWidth = measuredWidth || settings.tableWidth;
+
   const height = getTableHeight(
     tableData,
-    Math.max(settings.tableWidth, measuredWidth),
+    tableWidth,
     settings.showComments,
     relationships,
   );
 
   const visibleFieldEntries = useMemo(
     () => getVisibleFieldEntries(tableData, relationships),
-    [tableData, relationships],
-  );
-
-  const visibleFields = useMemo(
-    () => getVisibleFields(tableData, relationships),
     [tableData, relationships],
   );
 
@@ -259,20 +265,16 @@ export default function Table({
         key={tableData.id}
         x={tableData.x}
         y={tableData.y}
-        width={Math.max(settings.tableWidth, measuredWidth)}
+        width={tableWidth}
         height={height}
         className="group drop-shadow-lg rounded-md cursor-move"
         onPointerDown={onPointerDown}
       >
         <div
-          ref={innerRef}
           onDoubleClick={openEditor}
-          // 显式设置 width（不依赖 w-fit），避免 SVG foreignObject 内 w-fit 与父容器冲突导致 border 渲染不完整
           style={{
             direction: "ltr",
-            width: measuredWidth
-              ? Math.min(Math.max(measuredWidth, 180), 480)
-              : settings.tableWidth,
+            width: tableWidth,
           }}
           className={`border-2 hover:border-dashed hover:border-blue-500
                select-none rounded-lg ${
@@ -295,9 +297,9 @@ export default function Table({
             } ${tableData.comment && settings.showComments ? "pb-3" : ""}`}
           >
             <div
-              className={`overflow-hidden font-bold h-[40px] flex justify-between items-center gap-2`}
+              className={`font-bold h-[40px] flex justify-between items-center gap-2`}
             >
-              <div className="px-3 overflow-hidden text-ellipsis whitespace-nowrap min-w-0 flex-1">
+              <div className="px-3 whitespace-nowrap flex-1">
                 {tableData.name}
               </div>
               <div className="hidden group-hover:flex items-center shrink-0 pe-2">
@@ -530,7 +532,7 @@ export default function Table({
       <div
         className={`${
           index === visibleFields.length - 1 ? "" : "border-b border-gray-400"
-        } group w-full overflow-hidden`}
+        } group w-full`}
         onPointerEnter={(e) => {
           if (!e.isPrimary) return;
 
@@ -559,7 +561,7 @@ export default function Table({
           <div
             className={`${
               hoveredField === index ? "text-zinc-400" : ""
-            } flex items-center gap-2 overflow-hidden`}
+            } flex items-center gap-2`}
           >
             <button
               className="shrink-0 w-[10px] h-[10px] bg-[#2f68adcc] rounded-full"
@@ -572,14 +574,14 @@ export default function Table({
                   getFieldOffsetY(
                     visibleFields,
                     index,
-                    settings.tableWidth,
+                    tableWidth,
                     settings.showComments,
                   ) +
                   tableHeaderHeight +
                   tableColorStripHeight +
                   getCommentHeight(
                     tableData.comment,
-                    settings.tableWidth,
+                    tableWidth,
                     settings.showComments,
                   ) +
                   14;
@@ -594,21 +596,21 @@ export default function Table({
                 }));
               }}
             />
-            <span className="flex items-center gap-1 min-w-0">
+            <span className="flex items-center gap-1">
               {fieldData.displayName && (
                 <>
-                  <span className="text-zinc-500 italic text-xs shrink-0 max-w-[60%] truncate">
+                  <span className="text-zinc-500 italic text-xs shrink-0 whitespace-nowrap">
                     {fieldData.displayName}
                   </span>
                   <span className="text-zinc-400 shrink-0">·</span>
                 </>
               )}
-              <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+              <span className="whitespace-nowrap">
                 {fieldData.name}
               </span>
             </span>
           </div>
-          <div className="text-zinc-400">
+          <div className="text-zinc-400 shrink-0">
             {hoveredField === index ? (
               <Button
                 theme="solid"

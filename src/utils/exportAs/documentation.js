@@ -58,7 +58,15 @@ export function jsonToDocumentation(obj) {
           field.id,
         ).join(", ");
 
-        return [`**${field.name}**`, fieldType, settings, references, field.comment ?? ""];
+        const comment =
+          [
+            field.displayName ? `**${field.displayName}**` : "",
+            field.comment ?? "",
+          ]
+            .filter(Boolean)
+            .join("; ") || "";
+
+        return [`**${field.name}**`, fieldType, settings, references, comment];
       });
 
       const fieldsTable = formatMarkdownTable(

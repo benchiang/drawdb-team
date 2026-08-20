@@ -1,6 +1,7 @@
 import { DB } from "../../data/constants";
 import { dbToTypes, defaultTypes } from "../../data/datatypes";
 import {
+  buildFieldComment,
   escapeQuotes,
   getInlineFK,
   parseDefault,
@@ -192,11 +193,14 @@ export function getTypeString(
 export function jsonToMySQL(obj) {
   return `${obj.tables
     .map(
-      (table) =>
-        `CREATE TABLE IF NOT EXISTS \`${table.name}\` (\n${table.fields
+      (table) => {
+        const fieldComments = new Map();
+        table.fields.forEach((f) => fieldComments.set(f.id, buildFieldComment(f)));
+        return `CREATE TABLE IF NOT EXISTS \`${table.name}\` (\n${table.fields
           .map(
-            (field) =>
-              `\t\`${
+            (field) => {
+              const fc = fieldComments.get(field.id);
+              return `\t\`${
                 field.name
               }\` ${getTypeString(field, obj.database)}${field.notNull ? " NOT NULL" : ""}${
                 field.increment ? " AUTO_INCREMENT" : ""
@@ -215,7 +219,8 @@ export function jsonToMySQL(obj) {
                       )}", \`${field.name}\`))`
                     : ""
                   : ` CHECK(${field.check})`
-              }${field.comment ? ` COMMENT '${escapeQuotes(field.comment)}'` : ""}`,
+              }${fc ? ` COMMENT '${escapeQuotes(fc)}'` : ""}`;
+            }
           )
           .join(",\n")}${
           table.fields.filter((f) => f.primary).length > 0
@@ -231,7 +236,8 @@ export function jsonToMySQL(obj) {
                 .map((f) => `\`${f}\``)
                 .join(", ")});`,
           )
-          .join("\n")}`}`,
+          .join("\n")}`}`;
+      }
     )
     .join("\n")}\n${obj.references
     .map((r) => {
@@ -298,19 +304,21 @@ export function jsonToPostgreSQL(obj) {
         .join("\n");
       const createStatement = `CREATE TABLE IF NOT EXISTS "${table.name}" (\n${table.fields
         .map(
-          (field) =>
-            `${field.comment === "" ? "" : `\t-- ${field.comment}\n`}\t"${
-              field.name
-            }" ${getTypeString(field, obj.database, DB.POSTGRES)}${
-              field.notNull ? " NOT NULL" : ""
-            }${field.unique ? " UNIQUE" : ""}${
+          (field) => {
+            const fc = buildFieldComment(field);
+            return `${fc ? `\t-- ${fc}\n` : ""}\t"${field.name}" ${getTypeString(
+              field,
+              obj.database,
+              DB.POSTGRES,
+            )}${field.notNull ? " NOT NULL" : ""}${field.unique ? " UNIQUE" : ""}${
               field.default !== "" ? ` DEFAULT ${parseDefault(field)}` : ""
             }${
               field.check === "" ||
               !dbToTypes[obj.database][field.type].hasCheck
                 ? ""
                 : ` CHECK(${field.check})`
-            }`,
+            }`;
+          }
         )
         .join(",\n")}${
         table.fields.filter((f) => f.primary).length > 0
@@ -324,11 +332,12 @@ export function jsonToPostgreSQL(obj) {
         table.comment != ""
           ? `COMMENT ON TABLE ${table.name} IS '${escapeQuotes(table.comment)}';`
           : "",
-        ...table.fields.map((field) =>
-          field.comment.trim() !== ""
-            ? `COMMENT ON COLUMN ${table.name}.${field.name} IS '${escapeQuotes(field.comment)}';`
-            : "",
-        ),
+        ...table.fields.map((field) => {
+          const fc = buildFieldComment(field);
+          return fc.trim() !== ""
+            ? `COMMENT ON COLUMN ${table.name}.${field.name} IS '${escapeQuotes(fc)}';`
+            : "";
+        }),
       ]
         .filter(Boolean)
         .join("\n");
@@ -416,22 +425,24 @@ export function jsonToSQLite(obj) {
   return obj.tables
     .map((table) => {
       const inlineFK = getInlineFK(table, obj);
+      const fieldComments = new Map();
+      table.fields.forEach((f) => fieldComments.set(f.id, buildFieldComment(f)));
       return `${
         table.comment === "" ? "" : `/* ${table.comment} */\n`
       }CREATE TABLE IF NOT EXISTS "${table.name}" (\n${table.fields
-        .map(
-          (field) =>
-            `${field.comment === "" ? "" : `\t-- ${field.comment}\n`}\t"${
-              field.name
-            }" ${getSQLiteType(field)}${field.notNull ? " NOT NULL" : ""}${
-              field.unique ? " UNIQUE" : ""
-            }${field.default !== "" ? ` DEFAULT ${parseDefault(field, obj.database)}` : ""}${
-              field.check === "" ||
-              !dbToTypes[obj.database][field.type].hasCheck
-                ? ""
-                : ` CHECK(${field.check})`
-            }`,
-        )
+        .map((field) => {
+          const fc = fieldComments.get(field.id);
+          return `${fc ? `\t-- ${fc}\n` : ""}\t"${
+            field.name
+          }" ${getSQLiteType(field)}${field.notNull ? " NOT NULL" : ""}${
+            field.unique ? " UNIQUE" : ""
+          }${field.default !== "" ? ` DEFAULT ${parseDefault(field, obj.database)}` : ""}${
+            field.check === "" ||
+            !dbToTypes[obj.database][field.type].hasCheck
+              ? ""
+              : ` CHECK(${field.check})`
+          }`;
+        })
         .join(",\n")}${
         table.fields.filter((f) => f.primary).length > 0
           ? `,\n\tPRIMARY KEY(${table.fields
@@ -456,11 +467,14 @@ export function jsonToSQLite(obj) {
 export function jsonToMariaDB(obj) {
   return `${obj.tables
     .map(
-      (table) =>
-        `CREATE OR REPLACE TABLE \`${table.name}\` (\n${table.fields
+      (table) => {
+        const fieldComments = new Map();
+        table.fields.forEach((f) => fieldComments.set(f.id, buildFieldComment(f)));
+        return `CREATE OR REPLACE TABLE \`${table.name}\` (\n${table.fields
           .map(
-            (field) =>
-              `\t\`${
+            (field) => {
+              const fc = fieldComments.get(field.id);
+              return `\t\`${
                 field.name
               }\` ${getTypeString(field, obj.database, DB.MYSQL)}${field.notNull ? " NOT NULL" : ""}${
                 field.increment ? " AUTO_INCREMENT" : ""
@@ -479,7 +493,8 @@ export function jsonToMariaDB(obj) {
                       )}', \`${field.name}\`))`
                     : ""
                   : ` CHECK(${field.check})`
-              }${field.comment ? ` COMMENT '${escapeQuotes(field.comment)}'` : ""}`,
+              }${fc ? ` COMMENT '${escapeQuotes(fc)}'` : ""}`;
+            }
           )
           .join(",\n")}${
           table.fields.filter((f) => f.primary).length > 0
@@ -497,7 +512,8 @@ export function jsonToMariaDB(obj) {
                 .map((f) => `\`${f}\``)
                 .join(", ")});`,
           )
-          .join("\n")}`}`,
+          .join("\n")}`}`;
+      }
     )
     .join("\n")}\n${obj.references
     .map((r) => {
@@ -534,29 +550,31 @@ export function jsonToSQLServer(obj) {
     })
     .join("\n")}\n${obj.tables
     .map(
-      (table) =>
-        `${
+      (table) => {
+        const fieldComments = new Map();
+        table.fields.forEach((f) => fieldComments.set(f.id, buildFieldComment(f)));
+        return `${
           table.comment === "" ? "" : `/**\n${table.comment}\n*/\n`
         }CREATE TABLE [${table.name}] (\n${table.fields
-          .map(
-            (field) =>
-              `${field.comment === "" ? "" : `\t-- ${field.comment}\n`}\t[${
-                field.name
-              }] ${getTypeString(field, obj.database, DB.MSSQL)}${
-                field.notNull ? " NOT NULL" : ""
-              }${field.increment ? " IDENTITY" : ""}${
-                field.unique ? " UNIQUE" : ""
-              }${
-                field.default !== ""
-                  ? ` DEFAULT ${parseDefault(field, obj.database)}`
-                  : ""
-              }${
-                field.check === "" ||
-                !dbToTypes[obj.database][field.type].hasCheck
-                  ? ""
-                  : ` CHECK(${field.check})`
-              }`,
-          )
+          .map((field) => {
+            const fc = fieldComments.get(field.id);
+            return `${fc ? `\t-- ${fc}\n` : ""}\t[${field.name}] ${getTypeString(
+              field,
+              obj.database,
+              DB.MSSQL,
+            )}${field.notNull ? " NOT NULL" : ""}${
+              field.increment ? " IDENTITY" : ""
+            }${field.unique ? " UNIQUE" : ""}${
+              field.default !== ""
+                ? ` DEFAULT ${parseDefault(field, obj.database)}`
+                : ""
+            }${
+              field.check === "" ||
+              !dbToTypes[obj.database][field.type].hasCheck
+                ? ""
+                : ` CHECK(${field.check})`
+            }`;
+          })
           .join(",\n")}${
           table.fields.filter((f) => f.primary).length > 0
             ? `,\n\tPRIMARY KEY(${table.fields
@@ -564,7 +582,7 @@ export function jsonToSQLServer(obj) {
                 .map((f) => `[${f.name}]`)
                 .join(", ")})`
             : ""
-        }${uniqueConstraintClause(table, (s) => `[${s}]`)}\n);\nGO\n${table.indices
+          }${uniqueConstraintClause(table, (s) => `[${s}]`)}\n);\nGO\n${table.indices
           .map(
             (i) =>
               `\nCREATE ${i.unique ? "UNIQUE " : ""}INDEX [${
@@ -573,7 +591,8 @@ export function jsonToSQLServer(obj) {
                 .map((f) => `[${f}]`)
                 .join(", ")});\nGO\n`,
           )
-          .join("")}`,
+          .join("")}`;
+      }
     )
     .join("\n")}\n${obj.references
     .map((r) => {
@@ -600,8 +619,10 @@ export function jsonToSQLServer(obj) {
 export function jsonToOracleSQL(obj) {
   return `${obj.tables
     .map(
-      (table) =>
-        `${
+      (table) => {
+        const fieldComments = new Map();
+        table.fields.forEach((f) => fieldComments.set(f.id, buildFieldComment(f)));
+        return `${
           table.fields.filter((f) => f.type === "ENUM" || f.type === "SET")
             .length > 0
             ? `${table.fields
@@ -617,25 +638,25 @@ export function jsonToOracleSQL(obj) {
         }${
           table.comment === "" ? "" : `/* ${table.comment} */\n`
         }CREATE TABLE "${table.name}" (\n${table.fields
-          .map(
-            (field) =>
-              `${field.comment === "" ? "" : `  -- ${field.comment}\n`}  "${
-                field.name
-              }" ${getTypeString(field, obj.database, DB.ORACLESQL)}${
-                field.notNull ? " NOT NULL" : ""
-              }${field.increment ? " GENERATED ALWAYS AS IDENTITY" : ""}${
-                field.unique ? " UNIQUE" : ""
-              }${
-                field.default !== ""
-                  ? ` DEFAULT ${parseDefault(field, obj.database)}`
-                  : ""
-              }${
-                field.check === "" ||
-                !dbToTypes[obj.database][field.type].hasCheck
-                  ? ""
-                  : ` CHECK (${field.check})`
-              }`,
-          )
+          .map((field) => {
+            const fc = fieldComments.get(field.id);
+            return `${fc ? `  -- ${fc}\n` : ""}  "${field.name}" ${getTypeString(
+              field,
+              obj.database,
+              DB.ORACLESQL,
+            )}${field.notNull ? " NOT NULL" : ""}${
+              field.increment ? " GENERATED ALWAYS AS IDENTITY" : ""
+            }${field.unique ? " UNIQUE" : ""}${
+              field.default !== ""
+                ? ` DEFAULT ${parseDefault(field, obj.database)}`
+                : ""
+            }${
+              field.check === "" ||
+              !dbToTypes[obj.database][field.type].hasCheck
+                ? ""
+                : ` CHECK (${field.check})`
+            }`;
+          })
           .join(",\n")}${
           table.fields.filter((f) => f.primary).length > 0
             ? `,\n  PRIMARY KEY (${table.fields
@@ -643,14 +664,15 @@ export function jsonToOracleSQL(obj) {
                 .map((f) => `"${f.name}"`)
                 .join(", ")})`
             : ""
-        }${uniqueConstraintClause(table, (s) => `"${s}"`)}\n);\n${table.indices
+          }${uniqueConstraintClause(table, (s) => `"${s}"`)}\n);\n${table.indices
           .map(
             (i) =>
               `\nCREATE ${i.unique ? "UNIQUE " : ""}INDEX "${i.name}"\n  ON "${
                 table.name
               }" (${i.fields.map((f) => `"${f}"`).join(", ")});`,
           )
-          .join("\n")}`,
+          .join("\n")}`;
+      }
     )
     .join("\n\n")}\n${obj.references
     .map((r) => {
