@@ -27,6 +27,7 @@ import {
   useLayout,
   useSaveState,
   useCollab,
+  useCanvasMode,
 } from "../../hooks";
 import { useTranslation } from "react-i18next";
 import { useEventListener } from "usehooks-ts";
@@ -54,6 +55,7 @@ export default function Canvas() {
   const { settings } = useSettings();
   const { setUndoStack, setRedoStack } = useUndoRedo();
   const { transform, setTransform } = useTransform();
+  const { panMode, panModeRef } = useCanvasMode();
   const {
     selectedElement,
     setSelectedElement,
@@ -113,6 +115,20 @@ export default function Canvas() {
     panStart: { x: 0, y: 0 },
     cursorStart: { x: 0, y: 0 },
   });
+  // 按住空格 + 鼠标左键拖动画布（Figma / Excalidraw 风格的 pan）
+  // state 用于触发重渲染（光标样式），ref 用于 pointerdown 闭包内同步读取
+  const [spacePressed, setSpacePressed] = useState(false);
+  const spacePressedRef = useRef(false);
+
+  // 工具条切换到 pan 模式时，光标变 grab（mode 也走 useCanvasMode.panMode）
+  useEffect(() => {
+    if (panMode && !panning.isPanning) {
+      pointer.setStyle("grab");
+    } else if (!panMode && !spacePressed && !panning.isPanning) {
+      pointer.setStyle("default");
+    }
+  }, [panMode, panning.isPanning, pointer, spacePressed]);
+
   const [areaResize, setAreaResize] = useState({ id: -1, dir: "none" });
   const [areaInitDimensions, setAreaInitDimensions] = useState({
     x: 0,
@@ -458,6 +474,18 @@ export default function Canvas() {
     const isMouseMiddleButton = e.button === 1;
     const isMouseRightButton = e.button === 2;
 
+    // 按住空格 + 左键：把整个画布作为 pan 目标（不走框选、不触发元素拖动）
+    // 或者工具条切换到 pan 模式时，左键直接平移
+    if (isMouseLeftButton && (spacePressedRef.current || panModeRef.current)) {
+      setPanning({
+        isPanning: true,
+        panStart: transform.pan,
+        cursorStart: pointer.spaces.screen,
+      });
+      pointer.setStyle("grabbing");
+      return;
+    }
+
     if (isMouseLeftButton) {
       setBulkSelectRect({
         x1: pointer.spaces.diagram.x,
@@ -563,7 +591,11 @@ export default function Canvas() {
       if (e.button === 2) rightClickPanned.current = true;
     }
     setPanning((old) => ({ ...old, isPanning: false }));
-    pointer.setStyle("default");
+    if (panModeRef.current || spacePressedRef.current) {
+      pointer.setStyle("grab");
+    } else {
+      pointer.setStyle("default");
+    }
 
     if (linking) handleLinking();
     setLinking(false);
@@ -718,6 +750,41 @@ export default function Canvas() {
     canvasRef,
     { passive: false },
   );
+
+  // 全局监听空格键：按住空格时光标变 grab，提示用户可以左键拖动画布
+  useEventListener("keydown", (e) => {
+    if (e.code !== "Space") return;
+    // 忽略输入控件中的空格（避免影响文本编辑）
+    const target = e.target;
+    if (
+      target instanceof HTMLElement &&
+      (target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable)
+    ) {
+      return;
+    }
+    if (e.repeat) return;
+    e.preventDefault();
+    spacePressedRef.current = true;
+    setSpacePressed(true);
+    if (!panning.isPanning) pointer.setStyle("grab");
+  });
+  useEventListener("keyup", (e) => {
+    if (e.code !== "Space") return;
+    e.preventDefault();
+    spacePressedRef.current = false;
+    setSpacePressed(false);
+    if (!panning.isPanning) pointer.setStyle("default");
+  });
+  // 失焦时复位，避免空格被卡住
+  useEventListener("blur", () => {
+    if (spacePressedRef.current) {
+      spacePressedRef.current = false;
+      setSpacePressed(false);
+      if (!panning.isPanning) pointer.setStyle("default");
+    }
+  });
 
   return (
     <div className="grow h-full touch-none" id="canvas">

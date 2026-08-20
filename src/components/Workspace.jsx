@@ -59,7 +59,11 @@ export default function WorkSpace({ forcedDiagramId } = {}) {
   const [title, setTitle] = useState("Untitled Diagram");
   const [resize, setResize] = useState(false);
   const [toolbarContainer, setToolbarContainer] = useState(null);
-  const [width, setWidth] = useState(SIDEPANEL_MIN_WIDTH);
+  const [width, setWidth] = useState(() => {
+    // 默认占页面一半宽度，但不小于最小可读宽度
+    const half = typeof window !== "undefined" ? window.innerWidth / 2 : 600;
+    return Math.max(SIDEPANEL_MIN_WIDTH, Math.floor(half));
+  });
   const [lastSaved, setLastSaved] = useState("");
   const [showSelectDbModal, setShowSelectDbModal] = useState(false);
   const [showRestoreModal, setShowRestoreModal] = useState(false);

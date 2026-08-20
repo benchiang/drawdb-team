@@ -70,6 +70,7 @@ import {
   useAreas,
   useEnums,
   useFullscreen,
+  useCanvasMode,
   useNavigateWithParams,
 } from "../../hooks";
 import { enterFullscreen, exitFullscreen } from "../../utils/fullscreen";
@@ -158,6 +159,7 @@ export default function ControlPanel({
   const { undoStack, redoStack, setUndoStack, setRedoStack } = useUndoRedo();
   const { selectedElement, setSelectedElement } = useSelect();
   const { transform, setTransform } = useTransform();
+  const { panMode, setPanMode } = useCanvasMode();
   const { t, i18n } = useTranslation();
   const { version, diagramId, setDiagramId } = useContext(IdContext);
   // 云扩展语境下：远端 gist ID 与本地 diagramId 暂等同；保留局部别名以保持 cloudSave 路径字段名不变
@@ -2144,6 +2146,23 @@ export default function ControlPanel({
               disabled={layout.readOnly}
             >
               <i className="fa-solid fa-wand-magic-sparkles" />
+            </button>
+          </Tooltip>
+          <Tooltip content={t("panning")} position="bottom">
+            <button
+              className={`py-1 px-2 rounded-sm flex items-center transition-colors ${
+                panMode
+                  ? "bg-blue-500/20 text-blue-600 dark:text-blue-300 ring-1 ring-blue-400"
+                  : "hover-2"
+              }`}
+              onClick={() => setPanMode(!panMode)}
+              aria-pressed={panMode}
+            >
+              <i
+                className={`fa-solid ${
+                  panMode ? "fa-hand-back-fist" : "fa-hand"
+                } text-lg`}
+              />
             </button>
           </Tooltip>
           <Divider layout="vertical" margin="8px" />

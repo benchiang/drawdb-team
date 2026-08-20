@@ -149,6 +149,7 @@ export function getFieldHeight(field, containerWidth, showComments = true) {
   return (
     tableFieldHeight +
     FIELD_BORDER_WIDTH +
+    getDisplayNameHeight(field?.displayName) +
     getCommentHeight(
       field?.comment,
       containerWidth,
@@ -157,6 +158,15 @@ export function getFieldHeight(field, containerWidth, showComments = true) {
       FIELD_COMMENT_MAX_LINES,
     )
   );
+}
+
+// 字段 displayName（中文名/显示名）行高度。固定一行，避免画布布局抖动。
+const FIELD_DISPLAY_NAME_HEIGHT = 18;
+const FIELD_DISPLAY_NAME_PADDING = 6; // 与 comment 一致的缩进和留白
+
+export function getDisplayNameHeight(displayName) {
+  if (!displayName) return 0;
+  return FIELD_DISPLAY_NAME_HEIGHT + FIELD_DISPLAY_NAME_PADDING;
 }
 
 export function getRelationshipFields(relationship) {

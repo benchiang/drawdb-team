@@ -125,6 +125,7 @@ const en = {
     unique: "Unique",
     autoincrement: "Autoincrement",
     default_value: "Default",
+    display_name: "Display name",
     check: "Check expression",
     this_will_appear_as_is: "*This will appear in the generated script as is.",
     comment: "Comment",

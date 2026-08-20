@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   Action,
   Tab,
@@ -56,6 +56,9 @@ export default function Table({
   setLinkingLine,
 }) {
   const [hoveredField, setHoveredField] = useState(null);
+  // 测量实际渲染宽度（按字段内容自适应），覆盖 settings.tableWidth 默认值
+  const innerRef = useRef(null);
+  const [measuredWidth, setMeasuredWidth] = useState(0);
   const { layout } = useLayout();
   const {
     database,
@@ -76,6 +79,20 @@ export default function Table({
     setBulkSelectedElements,
   } = useSelect();
 
+  useLayoutEffect(() => {
+    if (!innerRef.current) return;
+    const el = innerRef.current;
+    const measure = () => {
+      // scrollWidth = 实际内容宽度（含 overflow 内容），适合 fit-content 场景
+      const w = el.scrollWidth;
+      setMeasuredWidth((prev) => (prev !== w ? w : prev));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [tableData.id, tableData.fields, tableData.comment, settings.showComments]);
+
   const borderColor = useMemo(
     () => (settings.mode === "light" ? "border-zinc-300" : "border-zinc-600"),
     [settings.mode],
@@ -83,7 +100,7 @@ export default function Table({
 
   const height = getTableHeight(
     tableData,
-    settings.tableWidth,
+    Math.max(settings.tableWidth, measuredWidth),
     settings.showComments,
     relationships,
   );
@@ -242,20 +259,27 @@ export default function Table({
         key={tableData.id}
         x={tableData.x}
         y={tableData.y}
-        width={settings.tableWidth}
+        width={Math.max(settings.tableWidth, measuredWidth)}
         height={height}
         className="group drop-shadow-lg rounded-md cursor-move"
         onPointerDown={onPointerDown}
       >
         <div
+          ref={innerRef}
           onDoubleClick={openEditor}
+          // 显式设置 width（不依赖 w-fit），避免 SVG foreignObject 内 w-fit 与父容器冲突导致 border 渲染不完整
+          style={{
+            direction: "ltr",
+            width: measuredWidth
+              ? Math.min(Math.max(measuredWidth, 180), 480)
+              : settings.tableWidth,
+          }}
           className={`border-2 hover:border-dashed hover:border-blue-500
-               select-none rounded-lg w-full ${
+               select-none rounded-lg ${
                  settings.mode === "light"
                    ? "bg-zinc-100 text-zinc-800"
                    : "bg-zinc-800 text-zinc-200"
                } ${isSelected ? "border-solid border-blue-500" : borderColor}`}
-          style={{ direction: "ltr" }}
         >
           <div
             className="h-[10px] w-full rounded-t-md"
@@ -437,6 +461,12 @@ export default function Table({
                         {t("foreign_key")}
                       </Tag>
                     )}
+                    {e.displayName && (
+                      <p>
+                        <strong>{t("display_name")}: </strong>
+                        {e.displayName}
+                      </p>
+                    )}
                     {reference && (
                       <p>
                         <strong>{t("references")}: </strong>
@@ -564,8 +594,18 @@ export default function Table({
                 }));
               }}
             />
-            <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-              {fieldData.name}
+            <span className="flex items-center gap-1 min-w-0">
+              {fieldData.displayName && (
+                <>
+                  <span className="text-zinc-500 italic text-xs shrink-0 max-w-[60%] truncate">
+                    {fieldData.displayName}
+                  </span>
+                  <span className="text-zinc-400 shrink-0">·</span>
+                </>
+              )}
+              <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+                {fieldData.name}
+              </span>
             </span>
           </div>
           <div className="text-zinc-400">

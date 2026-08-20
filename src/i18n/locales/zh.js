@@ -118,6 +118,7 @@ const zh = {
     unique: "唯一",
     autoincrement: "自增",
     default_value: "默认值",
+    display_name: "显示名",
     check: "检查表达式",
     this_will_appear_as_is: "*此内容将按原样显示在生成的脚本中。",
     comment: "注释",
