@@ -60,7 +60,7 @@ function PermTag({ permission }) {
   );
 }
 
-export default function Share({ setModal }) {
+export default function Share({ setModal: _setModal }) {
   const { title, diagramId } = useContext(IdContext);
   const { user: me } = useAuth();
   const [items, setItems] = useState([]);
