@@ -5,11 +5,13 @@ import { useNavigate } from "react-router-dom";
 import {
   Button,
   Empty,
+  Modal,
   Spin,
   Tag,
   Banner,
 } from "@douyinfe/semi-ui";
 import { IconPlus, IconUser, IconExit, IconLock } from "@douyinfe/semi-icons";
+import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { diagramsApi } from "../api/diagrams";
 import { subscribe, TOPICS } from "../api/storeBus";
@@ -99,6 +101,7 @@ function Section({ title, count, children, action }) {
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -167,15 +170,23 @@ export default function Dashboard() {
     }
   };
 
-  const deleteDiagram = async (diagram) => {
-    if (!window.confirm(`确定要删除「${diagram.name}」吗？`)) return;
-    try {
-      await diagramsApi.remove(diagram.diagramId);
-      reload();
-    } catch (err) {
-      console.warn("delete diagram failed", err);
-      setError("删除失败");
-    }
+  const deleteDiagram = (diagram) => {
+    Modal.confirm({
+      title: t("delete_diagram"),
+      content: t("are_you_sure_delete_diagram"),
+      okText: t("delete"),
+      okButtonProps: { type: "danger" },
+      cancelText: t("cancel"),
+      onOk: async () => {
+        try {
+          await diagramsApi.remove(diagram.diagramId);
+          reload();
+        } catch (err) {
+          console.warn("delete diagram failed", err);
+          setError("删除失败");
+        }
+      },
+    });
   };
 
   const handleLogout = () => {
