@@ -63,8 +63,8 @@ drawDB 是一个强大且易用的数据库实体关系图（ERD）编辑器，�
 需要 **Node.js 20+**。
 
 ```bash
-git clone https://github.com/drawdb-io/drawdb
-cd drawdb
+git clone https://github.com/benchiang/drawdb-team
+cd drawdb-team
 npm install
 npm run dev
 ```
@@ -94,13 +94,13 @@ node server/src/index.js   # 同时提供 API 与前端，监听 :3001
 ### Docker 部署
 
 ```bash
-docker build -t drawdb .
+docker build -t drawdb-team .
 docker run -d \
-  --name drawdb \
+  --name drawdb-team \
   -p 3001:3001 \
   -v drawdb-data:/app/server/data \
   --restart unless-stopped \
-  drawdb
+  drawdb-team
 ```
 
 镜像会构建前端、安装服务端生产依赖（不含 devDependencies）、启动 Express 监听 `3001`。SQLite 数据库存在命名卷 `drawdb-data` 的 `/app/server/data` 路径下。
@@ -117,7 +117,7 @@ docker run -d \
 docker compose up -d --build
 ```
 
-这条命令与上面的 `docker build` + `docker run` 完全等价：同样的镜像 tag（`drawdb:latest`）、同样的命名卷（`drawdb-data`）、同样的端口映射（`3001:3001`），环境变量直接内联在 `compose.yml` 里。停服用 `docker compose down`——命名卷会保留，SQLite 数据不会丢。
+这条命令与上面的 `docker build` + `docker run` 完全等价：同样的镜像 tag（`drawdb-team:latest`）、同样的命名卷（`drawdb-data`）、同样的端口映射（`3001:3001`），环境变量直接内联在 `compose.yml` 里。停服用 `docker compose down`——命名卷会保留，SQLite 数据不会丢。
 
 **配置项**（[compose.yml](compose.yml) 中按明文写入，禁止使用 secret_ref）：
 

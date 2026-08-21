@@ -62,8 +62,8 @@ DrawDB is a robust and user-friendly database entity relationship diagram (ERD) 
 Requires **Node.js 20+**.
 
 ```bash
-git clone https://github.com/drawdb-io/drawdb
-cd drawdb
+git clone https://github.com/benchiang/drawdb-team
+cd drawdb-team
 npm install
 npm run dev
 ```
@@ -92,13 +92,13 @@ node server/src/index.js   # serves both API and frontend on :3001
 ### Docker
 
 ```bash
-docker build -t drawdb .
+docker build -t drawdb-team .
 docker run -d \
-  --name drawdb \
+  --name drawdb-team \
   -p 3001:3001 \
   -v drawdb-data:/app/server/data \
   --restart unless-stopped \
-  drawdb
+  drawdb-team
 ```
 
 The image builds the frontend, installs the server's production dependencies only, and starts Express on port `3001`. SQLite is stored in a named volume `drawdb-data` at `/app/server/data`.
@@ -115,7 +115,7 @@ The image builds the frontend, installs the server's production dependencies onl
 docker compose up -d --build
 ```
 
-This is equivalent to the `docker build` + `docker run` commands above: same image tag (`drawdb:latest`), same named volume (`drawdb-data`), same port mapping (`3001:3001`), and the same env vars inlined in `compose.yml`. Tear down with `docker compose down` — the named volume is preserved, so your SQLite data survives.
+This is equivalent to the `docker build` + `docker run` commands above: same image tag (`drawdb-team:latest`), same named volume (`drawdb-data`), same port mapping (`3001:3001`), and the same env vars inlined in `compose.yml`. Tear down with `docker compose down` — the named volume is preserved, so your SQLite data survives.
 
 **Configuration** (environment variables in [compose.yml](compose.yml), plaintext by design):
 

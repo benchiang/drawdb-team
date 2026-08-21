@@ -1,8 +1,8 @@
 services:
-  drawdb:
+  drawdb-team:
     build: .
-    image: drawdb:latest
-    container_name: drawdb
+    image: drawdb-team:latest
+    container_name: drawdb-team
     restart: unless-stopped
     ports:
       - "3001:3001"
