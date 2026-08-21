@@ -26,6 +26,8 @@ const en = {
     delete_diagram: "Delete diagram",
     are_you_sure_delete_diagram:
       "Are you sure you want to delete this diagram? This operation is irreversible.",
+    are_you_sure_delete_table:
+      "Are you sure you want to delete this table? This operation is irreversible.",
     oops_smth_went_wrong: "Oops! Something went wrong.",
     import_diagram: "Import diagram",
     import_from_source: "Import from SQL",

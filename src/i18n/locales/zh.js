@@ -21,6 +21,7 @@ const zh = {
     rename: "重命名",
     delete_diagram: "删除图表",
     are_you_sure_delete_diagram: "确定要删除此图表吗？此操作不可逆转。",
+    are_you_sure_delete_table: "确定要删除此表吗？此操作不可逆转。",
     oops_smth_went_wrong: "糟糕！出了些问题。",
     import_diagram: "导入图表",
     import_from_source: "导入 SQL 源代码",

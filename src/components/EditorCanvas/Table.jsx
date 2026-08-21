@@ -26,6 +26,7 @@ import {
   ButtonGroup,
   SideSheet,
   Divider,
+  Modal,
 } from "@douyinfe/semi-ui";
 import {
   useLayout,
@@ -378,7 +379,19 @@ export default function Table({
                           theme="borderless"
                           block
                           style={{ justifyContent: "flex-start" }}
-                          onClick={() => deleteTable(tableData.id)}
+                          onClick={() => {
+                            if (layout.readOnly) return;
+                            Modal.confirm({
+                              title: t("delete_table", {
+                                tableName: tableData.name || "table",
+                              }),
+                              content: t("are_you_sure_delete_table"),
+                              okText: t("delete"),
+                              okButtonProps: { type: "danger" },
+                              cancelText: t("cancel"),
+                              onOk: () => deleteTable(tableData.id),
+                            });
+                          }}
                           disabled={layout.readOnly}
                         >
                           {t("delete")}

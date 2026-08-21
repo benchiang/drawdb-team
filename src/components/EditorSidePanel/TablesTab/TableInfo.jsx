@@ -7,6 +7,7 @@ import {
   Card,
   Select,
   Dropdown,
+  Modal,
 } from "@douyinfe/semi-ui";
 import ColorPicker from "../ColorPicker";
 import { IconDeleteStroked, IconPlus } from "@douyinfe/semi-icons";
@@ -429,7 +430,17 @@ export default function TableInfo({ data }) {
             type="danger"
             disabled={layout.readOnly}
             icon={<IconDeleteStroked />}
-            onClick={() => deleteTable(data.id)}
+            onClick={() => {
+              if (layout.readOnly) return;
+              Modal.confirm({
+                title: t("delete_table", { tableName: data.name || "table" }),
+                content: t("are_you_sure_delete_table"),
+                okText: t("delete"),
+                okButtonProps: { type: "danger" },
+                cancelText: t("cancel"),
+                onOk: () => deleteTable(data.id),
+              });
+            }}
           />
         </div>
       </div>
