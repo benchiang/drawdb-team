@@ -2261,7 +2261,11 @@ export default function ControlPanel({
                   // https://stackoverflow.com/a/70976017/1137077
                   e.target.releasePointerCapture(e.pointerId);
                 }}
-                onClick={!layout.readOnly && (() => setModal(MODAL.RENAME))}
+                onClick={
+                  !layout.readOnly
+                    ? () => setModal(MODAL.RENAME)
+                    : undefined
+                }
               >
                 <span>{isTemplate ? "Templates" : "Diagrams"}</span>
                 <span className="select-none text-zinc-400 dark:text-zinc-500 mx-1">
