@@ -51,6 +51,40 @@
     />
 
     <title>drawDB | Online database diagram editor and SQL generator</title>
+    <script>
+      // 过滤掉浏览器扩展抛出的 "Could not establish connection. Receiving end does not exist."
+      // 错误（chrome.runtime.connect 找不到 background service worker）。
+      // 与 drawDB 应用代码无关（应用未使用任何 chrome.runtime/postMessage API），
+      // 但会污染控制台导致误判。
+      // 必须放在 index.html 的内联脚本里、main.jsx 之前执行，否则部分扩展抛错早于监听器注册会漏掉。
+      (function () {
+        const isExtensionNoise = function (msg) {
+          return (
+            typeof msg === "string" &&
+            msg.indexOf("Could not establish connection") !== -1
+          );
+        };
+        window.addEventListener("error", function (event) {
+          if (isExtensionNoise(event?.message)) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            return true;
+          }
+          return false;
+        });
+        window.addEventListener("unhandledrejection", function (event) {
+          const reason = event?.reason;
+          const msg =
+            (reason && reason.message) ||
+            (typeof reason === "string" ? reason : "") ||
+            "";
+          if (isExtensionNoise(msg)) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }
+        });
+      })();
+    </script>
   </head>
   <body theme-mode="light">
     <noscript>You need to enable JavaScript to run this app.</noscript>
