@@ -287,6 +287,7 @@ const en = {
     no_changes_to_record: "No changes to record",
     click_to_view: "Click to view",
     load_more: "Load more",
+    more: "More",
     clear_cache: "Clear cache",
     cache_cleared: "Cache cleared",
     failed_to_record_version: "Failed to record version",

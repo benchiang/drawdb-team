@@ -7,10 +7,12 @@ import {
   Modal,
   TagInput,
   Checkbox,
+  Popover,
 } from "@douyinfe/semi-ui";
 import {
   IconDeleteStroked,
   IconKeyStroked,
+  IconMore,
 } from "@douyinfe/semi-icons";
 import {
   useEnums,
@@ -73,7 +75,8 @@ export default function TableField({ data, tid, index, inherited }) {
 
   return (
     <div className="my-2 border border-transparent hover:border-zinc-200 rounded p-1.5">
-      {/* 主行：displayName / name / type / size / precision / default / check / comment / NN / PK / 删除 — 全部一行 */}
+      {/* 主行：displayName / name / type / size / precision / NN / PK / U / A / 更多(...)
+          Default / Check / Comment / Delete 默认隐藏在「更多」Popover 里，主行仅保留 4 个布尔按钮 + 「更多」入口 */}
       <div className="flex flex-wrap gap-2 items-center">
         <DragHandle readOnly={layout.readOnly} id={data.id} />
 
@@ -236,52 +239,7 @@ export default function TableField({ data, tid, index, inherited }) {
           </div>
         )}
 
-        {/* Default */}
-        <div className="min-w-[100px] flex-1 basis-32">
-          <Input
-            size="small"
-            placeholder={t("default_value")}
-            value={data.default}
-            readonly={layout.readOnly}
-            disabled={resolved.noDefault || data.increment}
-            onChange={(value) =>
-              updateField(tid, data.id, { default: value })
-            }
-            onFocus={(e) => setEditField({ default: e.target.value })}
-            onBlur={(e) => pushUndo("default", e.target.value)}
-          />
-        </div>
-
-        {/* Check */}
-        {resolved.hasCheck && (
-          <div className="min-w-[120px] flex-1 basis-40">
-            <Input
-              size="small"
-              placeholder={t("check")}
-              value={data.check}
-              disabled={data.increment}
-              readonly={layout.readOnly}
-              onChange={(value) => updateField(tid, data.id, { check: value })}
-              onFocus={(e) => setEditField({ check: e.target.value })}
-              onBlur={(e) => pushUndo("check", e.target.value)}
-            />
-          </div>
-        )}
-
-        {/* Comment */}
-        <div className="min-w-[140px] flex-1 basis-48">
-          <Input
-            size="small"
-            placeholder={t("comment")}
-            value={data.comment}
-            readonly={layout.readOnly}
-            onChange={(value) =>
-              updateField(tid, data.id, { comment: value })
-            }
-            onFocus={(e) => setEditField({ comment: e.target.value })}
-            onBlur={(e) => pushUndo("comment", e.target.value)}
-          />
-        </div>
+        {/* Default / Check / Comment / Delete 全部隐藏在「更多」Popover 中（见下方） */}
 
         {/* NN / PK / delete */}
         <Button
@@ -409,15 +367,97 @@ export default function TableField({ data, tid, index, inherited }) {
           A
         </Button>
 
-        <Button
-          size="small"
-          title={t("delete")}
-          type="tertiary"
-          theme="borderless"
-          icon={<IconDeleteStroked />}
-          disabled={layout.readOnly}
-          onClick={handleDelete}
-        />
+        {/* 「更多」Popover：默认隐藏 Default / Check / Comment / Delete，保持主行紧凑 */}
+        <Popover
+          trigger="click"
+          position="bottomRight"
+          showArrow
+          spacing={6}
+          content={
+            <div className="flex flex-col gap-3 w-72 p-1">
+              {/* Default */}
+              <div>
+                <div className="text-xs text-zinc-500 mb-1">
+                  {t("default_value")}
+                </div>
+                <Input
+                  size="small"
+                  placeholder={t("default_value")}
+                  value={data.default}
+                  readonly={layout.readOnly}
+                  disabled={resolved.noDefault || data.increment}
+                  onChange={(value) =>
+                    updateField(tid, data.id, { default: value })
+                  }
+                  onFocus={(e) => setEditField({ default: e.target.value })}
+                  onBlur={(e) => pushUndo("default", e.target.value)}
+                />
+              </div>
+
+              {/* Check（仅当类型支持 CHECK 时显示） */}
+              {resolved.hasCheck && (
+                <div>
+                  <div className="text-xs text-zinc-500 mb-1">
+                    {t("check")}
+                  </div>
+                  <Input
+                    size="small"
+                    placeholder={t("check")}
+                    value={data.check}
+                    disabled={data.increment}
+                    readonly={layout.readOnly}
+                    onChange={(value) =>
+                      updateField(tid, data.id, { check: value })
+                    }
+                    onFocus={(e) => setEditField({ check: e.target.value })}
+                    onBlur={(e) => pushUndo("check", e.target.value)}
+                  />
+                </div>
+              )}
+
+              {/* Comment */}
+              <div>
+                <div className="text-xs text-zinc-500 mb-1">
+                  {t("comment")}
+                </div>
+                <Input
+                  size="small"
+                  placeholder={t("comment")}
+                  value={data.comment}
+                  readonly={layout.readOnly}
+                  onChange={(value) =>
+                    updateField(tid, data.id, { comment: value })
+                  }
+                  onFocus={(e) => setEditField({ comment: e.target.value })}
+                  onBlur={(e) => pushUndo("comment", e.target.value)}
+                />
+              </div>
+
+              {/* 分隔线 + Delete（仍走 Modal.confirm 二次确认） */}
+              <div className="-mx-1 my-1 border-t border-zinc-200" />
+              <Button
+                size="small"
+                type="danger"
+                theme="light"
+                icon={<IconDeleteStroked />}
+                disabled={layout.readOnly}
+                onClick={handleDelete}
+                block
+              >
+                {t("delete")}
+              </Button>
+            </div>
+          }
+        >
+          <Button
+            size="small"
+            type="tertiary"
+            theme="borderless"
+            icon={<IconMore />}
+            title={t("more")}
+            disabled={layout.readOnly}
+          />
+        </Popover>
       </div>
 
       {/* 次要行：ENUM/SET values 跨整行 + isArray/unsigned checkbox */}

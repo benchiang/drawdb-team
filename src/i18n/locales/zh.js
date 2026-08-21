@@ -264,6 +264,7 @@ const zh = {
     no_changes_to_record: "没有可记录的变更",
     click_to_view: "点击查看",
     load_more: "加载更多",
+    more: "更多",
     clear_cache: "清除版本",
     cache_cleared: "版本已清除",
     failed_to_record_version: "记录版本失败",
