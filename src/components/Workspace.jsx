@@ -51,7 +51,7 @@ export const IdContext = createContext({
   setVersion: () => {},
 });
 
-const SIDEPANEL_MIN_WIDTH = 374;
+const SIDEPANEL_MIN_WIDTH = 480;
 
 export default function WorkSpace({ forcedDiagramId } = {}) {
   const [diagramId, setDiagramId] = useState(forcedDiagramId || "");
@@ -59,11 +59,7 @@ export default function WorkSpace({ forcedDiagramId } = {}) {
   const [title, setTitle] = useState("Untitled Diagram");
   const [resize, setResize] = useState(false);
   const [toolbarContainer, setToolbarContainer] = useState(null);
-  const [width, setWidth] = useState(() => {
-    // 默认占页面一半宽度，但不小于最小可读宽度
-    const half = typeof window !== "undefined" ? window.innerWidth / 2 : 600;
-    return Math.max(SIDEPANEL_MIN_WIDTH, Math.floor(half));
-  });
+  const [width, setWidth] = useState(SIDEPANEL_MIN_WIDTH);
   const [lastSaved, setLastSaved] = useState("");
   const [showSelectDbModal, setShowSelectDbModal] = useState(false);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
