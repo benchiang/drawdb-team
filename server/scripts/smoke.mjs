@@ -380,6 +380,79 @@ try {
     throw new Error("anonymous search should 401, got " + searchNoAuth.status);
   console.log("✓ /users/search requires auth");
 
+  // 20) alice 修改自己的密码：成功
+  const pwdOk = await http_(
+    "POST",
+    "/api/auth/password",
+    { currentPassword: "alicepw", newPassword: "newalicepw" },
+    aliceToken,
+  );
+  if (pwdOk.status !== 200) throw new Error("change password should 200, got " + pwdOk.status);
+  console.log("✓ self change-password succeeds");
+
+  // 20a) 用新密码应能登录
+  const aliceRelogin = await http_("POST", "/api/auth/login", {
+    username: "alice",
+    password: "newalicepw",
+  });
+  if (aliceRelogin.status !== 200)
+    throw new Error("login with new password should 200, got " + aliceRelogin.status);
+  const aliceToken2 = aliceRelogin.body.token;
+  console.log("✓ login with new password works (DB hash actually updated)");
+
+  // 20b) 旧密码已失效
+  const oldLogin = await http_("POST", "/api/auth/login", {
+    username: "alice",
+    password: "alicepw",
+  });
+  if (oldLogin.status !== 401)
+    throw new Error("old password should 401, got " + oldLogin.status);
+  console.log("✓ old password no longer works");
+
+  // 20c) 当前密码错误应 401
+  const pwdBad = await http_(
+    "POST",
+    "/api/auth/password",
+    { currentPassword: "wrong", newPassword: "another" },
+    aliceToken2,
+  );
+  if (pwdBad.status !== 401)
+    throw new Error("wrong current should 401, got " + pwdBad.status);
+  if (pwdBad.body?.error !== "invalid_credentials")
+    throw new Error("expected error=invalid_credentials, got " + JSON.stringify(pwdBad.body));
+  console.log("✓ wrong current password -> 401 invalid_credentials");
+
+  // 20d) 新密码太短应 400
+  const pwdShort = await http_(
+    "POST",
+    "/api/auth/password",
+    { currentPassword: "newalicepw", newPassword: "ab" },
+    aliceToken2,
+  );
+  if (pwdShort.status !== 400)
+    throw new Error("short new password should 400, got " + pwdShort.status);
+  console.log("✓ too-short new password -> 400");
+
+  // 20e) 新旧密码相同应 400
+  const pwdSame = await http_(
+    "POST",
+    "/api/auth/password",
+    { currentPassword: "newalicepw", newPassword: "newalicepw" },
+    aliceToken2,
+  );
+  if (pwdSame.status !== 400)
+    throw new Error("same password should 400, got " + pwdSame.status);
+  console.log("✓ new password equals current -> 400");
+
+  // 20f) 未登录访问应 401
+  const pwdNoAuth = await http_("POST", "/api/auth/password", {
+    currentPassword: "newalicepw",
+    newPassword: "another",
+  });
+  if (pwdNoAuth.status !== 401)
+    throw new Error("anonymous change-password should 401, got " + pwdNoAuth.status);
+  console.log("✓ change-password requires auth");
+
   // 11) admin 删除自己应 400
   const selfDel = await http_("DELETE", `/api/users/${admin.user.id}`, null, adminToken);
   if (selfDel.status !== 400) throw new Error("self delete should 400");

@@ -329,6 +329,16 @@ const en = {
     dbml_problem: "Ln {{line}}, Col {{column}}: {{message}}",
     users: "Users",
     logout: "Logout",
+    change_password: "Change password",
+    current_password: "Current password",
+    new_password: "New password",
+    confirm_password: "Confirm new password",
+    password_changed: "Password changed successfully",
+    password_mismatch: "New passwords do not match",
+    password_too_short: "Password must be at least 4 characters",
+    password_unchanged: "New password must differ from the current one",
+    wrong_current_password: "Current password is incorrect",
+    change_password_failed: "Failed to change password",
   },
 };
 

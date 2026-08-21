@@ -6,6 +6,11 @@ export const authApi = {
     client
       .post("/auth/bootstrap", { username, password })
       .then((r) => r.data),
+  // 已登录用户修改自己的密码：需提供当前密码以验证身份
+  changePassword: (currentPassword, newPassword) =>
+    client
+      .post("/auth/password", { currentPassword, newPassword })
+      .then((r) => r.data),
 };
 
 export const usersApi = {

@@ -63,4 +63,32 @@ router.get("/me", authRequired, (req, res) => {
   res.json({ user });
 });
 
+// POST /api/auth/password —— 登录用户修改自己的密码
+// Body: { currentPassword, newPassword }
+router.post("/password", authRequired, (req, res) => {
+  const db = getDb();
+  const { currentPassword, newPassword } = req.body || {};
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: "missing_credentials" });
+  }
+  if (typeof newPassword !== "string" || newPassword.length < 4) {
+    return res.status(400).json({ error: "credentials_too_weak" });
+  }
+  if (newPassword === currentPassword) {
+    return res.status(400).json({ error: "password_unchanged" });
+  }
+  const user = db
+    .prepare("SELECT id, password_hash FROM users WHERE id = ?")
+    .get(req.user.sub);
+  if (!user) return res.status(401).json({ error: "invalid_token" });
+  const ok = bcrypt.compareSync(currentPassword, user.password_hash);
+  if (!ok) return res.status(401).json({ error: "invalid_credentials" });
+  const newHash = bcrypt.hashSync(newPassword, 10);
+  db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(
+    newHash,
+    user.id,
+  );
+  res.json({ ok: true });
+});
+
 export default router;

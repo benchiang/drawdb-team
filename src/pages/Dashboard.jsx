@@ -9,11 +9,12 @@ import {
   Tag,
   Banner,
 } from "@douyinfe/semi-ui";
-import { IconPlus, IconUser, IconExit } from "@douyinfe/semi-icons";
+import { IconPlus, IconUser, IconExit, IconLock } from "@douyinfe/semi-icons";
 import { v4 as uuidv4 } from "uuid";
 import { diagramsApi } from "../api/diagrams";
 import { subscribe, TOPICS } from "../api/storeBus";
 import { useAuth } from "../context/AuthContext";
+import ChangePasswordModal from "../components/Dashboard/ChangePasswordModal";
 import { databases } from "../data/databases";
 import { DB } from "../data/constants";
 import logo from "../assets/logo_light_160.png";
@@ -102,6 +103,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
+  const [pwdModalVisible, setPwdModalVisible] = useState(false);
 
   const reload = useCallback(async () => {
     try {
@@ -206,6 +208,13 @@ export default function Dashboard() {
             )}
             <Button
               type="tertiary"
+              icon={<IconLock />}
+              onClick={() => setPwdModalVisible(true)}
+            >
+              修改密码
+            </Button>
+            <Button
+              type="tertiary"
               icon={<IconExit />}
               onClick={handleLogout}
             >
@@ -285,6 +294,11 @@ export default function Dashboard() {
         &copy; {new Date().getFullYear()} <strong>drawDB</strong> - 本地多用户
         数据库设计工具
       </footer>
+
+      <ChangePasswordModal
+        visible={pwdModalVisible}
+        onCancel={() => setPwdModalVisible(false)}
+      />
     </div>
   );
 }

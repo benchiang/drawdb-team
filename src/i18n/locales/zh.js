@@ -273,6 +273,16 @@ const zh = {
     snap_to_grid: "对齐网格线",
     users: "用户管理",
     logout: "注销",
+    change_password: "修改密码",
+    current_password: "当前密码",
+    new_password: "新密码",
+    confirm_password: "确认新密码",
+    password_changed: "密码修改成功",
+    password_mismatch: "两次输入的新密码不一致",
+    password_too_short: "密码至少 4 位",
+    password_unchanged: "新密码不能与当前密码相同",
+    wrong_current_password: "当前密码错误",
+    change_password_failed: "修改密码失败",
   },
 };
 
