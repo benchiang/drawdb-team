@@ -83,7 +83,7 @@ export default function ChangePasswordModal({ visible, onCancel }) {
           e.preventDefault();
           handleOk();
         }}
-        className="space-y-3 pt-2"
+        className="space-y-3 pt-2 pb-5"
       >
         <div>
           <div className="text-sm font-medium text-zinc-700 dark:text-zinc-200 mb-1">

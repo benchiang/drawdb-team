@@ -53,7 +53,7 @@ function UserFormModal({ visible, initial, onCancel, onSubmit, submitting }) {
       footer={null}
       width={420}
     >
-      <form onSubmit={handleSubmit} className="space-y-3 pt-2">
+      <form onSubmit={handleSubmit} className="space-y-3 pt-2 pb-5">
         {!isEdit && (
           <div>
             <div className="text-sm font-medium text-zinc-700 mb-1">用户名</div>
