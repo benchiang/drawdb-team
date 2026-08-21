@@ -18,7 +18,6 @@ import {
   IconEdit,
 } from "@douyinfe/semi-icons";
 import { IdContext } from "../../Workspace";
-import { MODAL } from "../../../data/constants";
 import { collaboratorsApi } from "../../../api/collaborators";
 import { usersApi } from "../../../api/auth";
 import { useAuth } from "../../../context/AuthContext";
@@ -369,10 +368,6 @@ export default function Share({ setModal }) {
             ))}
           </ul>
         )}
-      </div>
-
-      <div className="flex justify-end">
-        <Button onClick={() => setModal(MODAL.NONE)}>关闭</Button>
       </div>
     </div>
   );
