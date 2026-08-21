@@ -51,68 +51,6 @@
     />
 
     <title>drawDB | Online database diagram editor and SQL generator</title>
-    <script>
-      // 过滤掉浏览器扩展抛出的 "Could not establish connection. Receiving end does not exist."
-      // 错误（chrome.runtime.connect/sendMessage 找不到 background service worker）。
-      // 与 drawDB 应用代码无关（应用未使用任何 chrome.runtime/postMessage API），
-      // 但会污染控制台导致误判。
-      // 必须放在 index.html 的内联脚本里、main.jsx 之前执行，否则部分扩展抛错早于监听器注册会漏掉。
-      (function () {
-        var NOISE = "Could not establish connection";
-        var isNoise = function (text) {
-          return (
-            typeof text === "string" && text.indexOf(NOISE) !== -1
-          );
-        };
-        // 1) 拦截 unhandledrejection（promise 拒绝路径：用户看到的 "Uncaught (in promise) Error: ..."）
-        //    用 capture 阶段优先于其它监听器；stopImmediatePropagation 阻止后续监听器与浏览器默认日志。
-        window.addEventListener(
-          "unhandledrejection",
-          function (event) {
-            var reason = event && event.reason;
-            var msg =
-              (reason && reason.message) ||
-              (typeof reason === "string" ? reason : "") ||
-              "";
-            if (isNoise(msg)) {
-              event.preventDefault();
-              event.stopImmediatePropagation();
-            }
-          },
-          true,
-        );
-        // 2) 拦截同步 error 事件（window.onerror 路径）
-        window.addEventListener(
-          "error",
-          function (event) {
-            if (isNoise(event && event.message)) {
-              event.preventDefault();
-              event.stopImmediatePropagation();
-              return true;
-            }
-            return false;
-          },
-          true,
-        );
-        // 3) 兜底：拦截 console.error / console.warn 的扩展噪音。
-        //    Chrome 把内容脚本/扩展抛错统一通过 console.error 写到 DevTools，
-        //    部分情况下 unhandledrejection 事件没冒出来时这是唯一可拦截的位置。
-        //    只在消息里精确包含 NOISE 时才吞掉，不影响其他日志。
-        ["error", "warn"].forEach(function (level) {
-          var original = console[level];
-          if (typeof original !== "function") return;
-          console[level] = function () {
-            for (var i = 0; i < arguments.length; i++) {
-              var arg = arguments[i];
-              var text =
-                (arg && (arg.message || arg.toString())) || "";
-              if (isNoise(text)) return;
-            }
-            return original.apply(console, arguments);
-          };
-        });
-      })();
-    </script>
   </head>
   <body theme-mode="light">
     <noscript>You need to enable JavaScript to run this app.</noscript>
