@@ -151,7 +151,7 @@ const MONO_FONT =
  *   [圆点 10px] + [gap-2 8px] + (displayName + " · " [gap-1 4px]) + [name] + [gap-1 4px] + [type 字体 mono]
  *   + 左右 padding (px-2 = 8px*2) + border (border-2 = 2px*2)
  */
-export function measureFieldRowWidth({ displayName, name, type, size, isPK, notNull }) {
+export function measureFieldRowWidth({ displayName, name, type, size }) {
   const ctx = getTableMeasureCtx();
   if (!ctx) return 0;
   const bodyFont = getBodyFont();

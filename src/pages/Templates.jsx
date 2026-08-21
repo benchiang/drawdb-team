@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Tabs, TabPane, Banner, Steps, Button, Toast } from "@douyinfe/semi-ui";
+import { Tabs, TabPane, Banner, Steps, Toast } from "@douyinfe/semi-ui";
 import { IconDeleteStroked } from "@douyinfe/semi-icons";
 import { templatesApi } from "../api/templates";
 import { useTemplates } from "../hooks/useTemplates";

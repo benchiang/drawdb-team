@@ -1,7 +1,7 @@
 // 登录后的首页：展示当前用户「我的图 / 共享给我」两个分区
 // 点击列表项才进入编辑器画布（/editor/diagrams/:id）
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Button,
   Empty,
@@ -11,7 +11,6 @@ import {
 } from "@douyinfe/semi-ui";
 import { IconPlus, IconUser, IconExit } from "@douyinfe/semi-icons";
 import { v4 as uuidv4 } from "uuid";
-import { useTranslation } from "react-i18next";
 import { diagramsApi } from "../api/diagrams";
 import { subscribe, TOPICS } from "../api/storeBus";
 import { useAuth } from "../context/AuthContext";
@@ -28,7 +27,7 @@ function formatTimestamp(value) {
   return d.toLocaleString();
 }
 
-function DiagramCard({ diagram, currentUserId, onOpen, onDelete }) {
+function DiagramCard({ diagram, onOpen, onDelete }) {
   // accessRole: 'owner' | 'edit' | 'read'
   // 非 owner（即 read/edit）都算"共享给我"
   const isShared = diagram.accessRole === "edit" || diagram.accessRole === "read";
@@ -99,7 +98,6 @@ function Section({ title, count, children, action }) {
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const { t } = useTranslation();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -256,7 +254,6 @@ export default function Dashboard() {
                 <DiagramCard
                   key={d.diagramId}
                   diagram={d}
-                  currentUserId={user?.id}
                   onOpen={openDiagram}
                   onDelete={deleteDiagram}
                 />
@@ -276,7 +273,6 @@ export default function Dashboard() {
                 <DiagramCard
                   key={d.diagramId}
                   diagram={d}
-                  currentUserId={user?.id}
                   onOpen={openDiagram}
                 />
               ))}

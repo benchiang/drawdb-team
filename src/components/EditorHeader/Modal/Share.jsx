@@ -17,7 +17,6 @@ import {
   IconEyeOpened,
   IconEdit,
 } from "@douyinfe/semi-icons";
-import { useTranslation } from "react-i18next";
 import { IdContext } from "../../Workspace";
 import { MODAL } from "../../../data/constants";
 import { collaboratorsApi } from "../../../api/collaborators";
@@ -63,7 +62,6 @@ function PermTag({ permission }) {
 }
 
 export default function Share({ setModal }) {
-  const { t } = useTranslation();
   const { title, diagramId } = useContext(IdContext);
   const { user: me } = useAuth();
   const [items, setItems] = useState([]);

@@ -2,7 +2,6 @@
 // 单文件 better-sqlite3，schema 简洁直接；所有业务 ID 均为应用层 UUID。
 // users 表：username/password_hash/role；diagrams/templates 按 owner_id 隔离。
 import Database from "better-sqlite3";
-import bcrypt from "bcryptjs";
 import { config } from "./config.js";
 
 let _db = null;

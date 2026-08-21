@@ -1841,16 +1841,12 @@ export default function ControlPanel({
           message: t("are_you_sure_flush_storage"),
         },
         function: async () => {
+          // 服务端 SQLite 持久化后，本地只剩 localStorage 缓存。
+          // 真正的图数据需在用户管理页或服务端清理，这里只清前端缓存。
           localStorage.removeItem(STORAGE_KEY);
-          db.delete()
-            .then(() => {
-              Toast.success(t("storage_flushed"));
-              navigate("/editor", { replace: true });
-              window.location.reload();
-            })
-            .catch(() => {
-              Toast.error(t("oops_smth_went_wrong"));
-            });
+          Toast.success(t("storage_flushed"));
+          navigate("/editor", { replace: true });
+          window.location.reload();
         },
       },
     },

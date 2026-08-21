@@ -38,7 +38,6 @@ import { useTranslation } from "react-i18next";
 import { databases } from "../data/databases";
 import { isRtl } from "../i18n/utils/rtl";
 import { useMatch, useParams } from "react-router-dom";
-import { mergeCustomTypes } from "../utils/customTypes";
 import {
   readDismissedBanners,
   addDismissedBanner,
@@ -430,7 +429,6 @@ export default function WorkSpace({ forcedDiagramId } = {}) {
     setDatabase,
     setEnums,
     selectedDb,
-    setSaveState,
     setLayout,
     navigate,
     isDiagram,
