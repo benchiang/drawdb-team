@@ -453,6 +453,52 @@ try {
     throw new Error("anonymous change-password should 401, got " + pwdNoAuth.status);
   console.log("✓ change-password requires auth");
 
+  // 20g) 安全不变量：即便 body 里塞别人的 userId，也只能改自己。
+  // 抓 admin 的初始密码指纹：记下 admin 当前能用哪个密码登录。
+  const adminLoginProbe = await http_("POST", "/api/auth/login", {
+    username: admin.user.username,
+    password: "foofoofoo", // bootstrap 时给 admin 设的初始密码
+  });
+  if (adminLoginProbe.status !== 200)
+    throw new Error(
+      "admin baseline login should work before privilege-escape test, got " +
+        adminLoginProbe.status,
+    );
+  // alice 用自己的合法 currentPassword 发请求，但 body 里塞 admin.id
+  const privilegeEscape = await http_(
+    "POST",
+    "/api/auth/password",
+    {
+      userId: admin.user.id,
+      username: admin.user.username,
+      currentPassword: "newalicepw",
+      newPassword: "hacked-by-alice",
+    },
+    aliceToken2,
+  );
+  if (privilegeEscape.status !== 200)
+    throw new Error(
+      "request should succeed (200) but operate on JWT subject only, got " +
+        privilegeEscape.status,
+    );
+  // 验证：admin 的密码没被改
+  const adminStillOk = await http_("POST", "/api/auth/login", {
+    username: admin.user.username,
+    password: "foofoofoo",
+  });
+  if (adminStillOk.status !== 200)
+    throw new Error(
+      "admin password should NOT have been changed by alice, got login=" +
+        adminStillOk.status,
+    );
+  const adminPwned = await http_("POST", "/api/auth/login", {
+    username: admin.user.username,
+    password: "hacked-by-alice",
+  });
+  if (adminPwned.status === 200)
+    throw new Error("CRITICAL: admin password was overwritten by alice!");
+  console.log("✓ body.userId is ignored; route always uses req.user.sub");
+
   // 11) admin 删除自己应 400
   const selfDel = await http_("DELETE", `/api/users/${admin.user.id}`, null, adminToken);
   if (selfDel.status !== 400) throw new Error("self delete should 400");

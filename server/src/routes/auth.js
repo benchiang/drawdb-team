@@ -64,6 +64,12 @@ router.get("/me", authRequired, (req, res) => {
 });
 
 // POST /api/auth/password —— 登录用户修改自己的密码
+//
+// 安全不变量：普通用户只能改自己的密码。
+//   - 路由不接受 URL/body 里的 userId
+//   - 目标用户 ID 永远来自 JWT 的 sub 字段（authRequired 中间件解析）
+//   - 任何人想改别人的密码只能走 admin 接口 PATCH /api/users/:id
+//
 // Body: { currentPassword, newPassword }
 router.post("/password", authRequired, (req, res) => {
   const db = getDb();
@@ -77,6 +83,7 @@ router.post("/password", authRequired, (req, res) => {
   if (newPassword === currentPassword) {
     return res.status(400).json({ error: "password_unchanged" });
   }
+  // 即便请求体里塞了 userId 也不接受，永远按 JWT 主体定位用户
   const user = db
     .prepare("SELECT id, password_hash FROM users WHERE id = ?")
     .get(req.user.sub);
