@@ -499,6 +499,82 @@ try {
     throw new Error("CRITICAL: admin password was overwritten by alice!");
   console.log("✓ body.userId is ignored; route always uses req.user.sub");
 
+  // ---- 回收站：软删除 + 恢复 + 硬删除 ----
+  // 21) admin 软删 diag-admin-1（204）
+  const softDel = await http_("DELETE", "/api/diagrams/diag-admin-1", null, adminToken);
+  if (softDel.status !== 204) throw new Error("soft delete should 204, got " + softDel.status);
+  console.log("✓ soft delete moves diagram to trash");
+
+  // 21a) 软删后 GET /:id 应 404
+  const getTrashed = await http_("GET", "/api/diagrams/diag-admin-1", null, adminToken);
+  if (getTrashed.status !== 404)
+    throw new Error("trashed diagram GET should 404, got " + getTrashed.status);
+  console.log("✓ trashed diagram is hidden from GET /:id");
+
+  // 21b) GET / 不再包含 diag-admin-1
+  const listAfterTrash = await http_("GET", "/api/diagrams", null, adminToken);
+  const idsAfterTrash = (listAfterTrash.body.items || []).map((d) => d.diagramId);
+  if (idsAfterTrash.includes("diag-admin-1"))
+    throw new Error("trashed diagram should not appear in list, got: " + JSON.stringify(idsAfterTrash));
+  console.log("✓ trashed diagram is hidden from list");
+
+  // 21c) GET /trash 应包含 diag-admin-1，且带 deletedAt
+  const trashList = await http_("GET", "/api/diagrams/trash", null, adminToken);
+  const trashedIds = (trashList.body.items || []).map((d) => d.diagramId);
+  if (!trashedIds.includes("diag-admin-1"))
+    throw new Error("trash list should include diag-admin-1, got: " + JSON.stringify(trashedIds));
+  const trashedItem = trashList.body.items.find((d) => d.diagramId === "diag-admin-1");
+  if (!trashedItem.deletedAt)
+    throw new Error("trashed item should expose deletedAt, got: " + JSON.stringify(trashedItem));
+  console.log("✓ /trash lists trashed diagram with deletedAt");
+
+  // 21d) 协作者拿不到 trashed 图（应 404）
+  const aliceGetTrashed = await http_("GET", "/api/diagrams/diag-admin-1", null, aliceToken2);
+  if (aliceGetTrashed.status !== 404)
+    throw new Error("collaborator should not access trashed diagram, got " + aliceGetTrashed.status);
+  console.log("✓ collaborator cannot access trashed diagram");
+
+  // 21e) admin POST /:id/restore 应成功并返回图
+  const restore = await http_("POST", "/api/diagrams/diag-admin-1/restore", null, adminToken);
+  if (restore.status !== 200)
+    throw new Error("restore should 200, got " + restore.status);
+  if (restore.body.accessRole !== "owner")
+    throw new Error("restored diagram should be owner-visible");
+  console.log("✓ restore brings diagram back");
+
+  // 21f) 恢复后 GET /:id 应再次可见
+  const getRestored = await http_("GET", "/api/diagrams/diag-admin-1", null, adminToken);
+  if (getRestored.status !== 200)
+    throw new Error("restored diagram GET should 200, got " + getRestored.status);
+  console.log("✓ restored diagram is visible again");
+
+  // 21g) 协作者不能 restore
+  const aliceRestore = await http_("POST", "/api/diagrams/diag-admin-1/restore", null, aliceToken2);
+  if (aliceRestore.status !== 403)
+    throw new Error("collaborator should not restore, got " + aliceRestore.status);
+  console.log("✓ collaborator cannot restore");
+
+  // 21h) 没软删就硬删应被 404 拒（防误删）
+  const prematurePerm = await http_("DELETE", "/api/diagrams/diag-admin-1/permanent", null, adminToken);
+  if (prematurePerm.status !== 404)
+    throw new Error("premature permanent delete should 404, got " + prematurePerm.status);
+  console.log("✓ permanent delete without trash is blocked");
+
+  // 21i) 软删 → 硬删应 204
+  await http_("DELETE", "/api/diagrams/diag-admin-1", null, adminToken);
+  const perm = await http_("DELETE", "/api/diagrams/diag-admin-1/permanent", null, adminToken);
+  if (perm.status !== 204) throw new Error("permanent delete should 204, got " + perm.status);
+  const trashAfterPerm = await http_("GET", "/api/diagrams/trash", null, adminToken);
+  if ((trashAfterPerm.body.items || []).some((d) => d.diagramId === "diag-admin-1"))
+    throw new Error("diagram should be gone after permanent delete");
+  console.log("✓ trash -> permanent delete works");
+
+  // 21j) 已删除的图再软删应 404
+  const reSoftDel = await http_("DELETE", "/api/diagrams/diag-admin-1", null, adminToken);
+  if (reSoftDel.status !== 404)
+    throw new Error("re-soft-deleting trashed diagram should 404, got " + reSoftDel.status);
+  console.log("✓ cannot soft-delete an already-trashed diagram");
+
   // 11) admin 删除自己应 400
   const selfDel = await http_("DELETE", `/api/users/${admin.user.id}`, null, adminToken);
   if (selfDel.status !== 400) throw new Error("self delete should 400");

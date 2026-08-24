@@ -9,6 +9,7 @@ import {
   Spin,
   Tag,
   Banner,
+  Toast,
 } from "@douyinfe/semi-ui";
 import { IconPlus, IconUser, IconExit, IconLock } from "@douyinfe/semi-icons";
 import { useTranslation } from "react-i18next";
@@ -82,6 +83,43 @@ function DiagramCard({ diagram, onOpen, onDelete }) {
   );
 }
 
+function TrashedDiagramCard({ diagram, onRestore, onPermanentDelete }) {
+  const { t } = useTranslation();
+  return (
+    <div className="rounded-lg border border-dashed border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-900/40 p-4">
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="font-semibold text-zinc-700 dark:text-zinc-200 truncate flex-1">
+          {diagram.name || "Untitled"}
+        </div>
+        <Tag size="small" color="grey">
+          {databaseName(diagram.database)}
+        </Tag>
+      </div>
+      <div className="flex items-center gap-2 text-xs text-zinc-500 mb-3">
+        <span>
+          {t("trashed_at")} {formatTimestamp(diagram.deletedAt)}
+        </span>
+      </div>
+      <div className="flex items-center justify-end gap-3 text-xs">
+        <button
+          type="button"
+          className="text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300 transition-colors"
+          onClick={() => onRestore?.(diagram)}
+        >
+          {t("restore")}
+        </button>
+        <button
+          type="button"
+          className="text-red-500 hover:text-red-700 transition-colors"
+          onClick={() => onPermanentDelete?.(diagram)}
+        >
+          {t("delete_permanently")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function Section({ title, count, children, action }) {
   return (
     <section className="mb-8">
@@ -104,6 +142,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [items, setItems] = useState([]);
+  const [trashed, setTrashed] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
@@ -113,8 +152,12 @@ export default function Dashboard() {
   const reload = useCallback(async () => {
     try {
       setError("");
-      const list = await diagramsApi.list();
+      const [list, trashedList] = await Promise.all([
+        diagramsApi.list(),
+        diagramsApi.listTrashed().catch(() => []),
+      ]);
       setItems(list || []);
+      setTrashed(trashedList || []);
     } catch (err) {
       console.warn("load diagrams failed", err);
       setError("无法加载图列表");
@@ -183,11 +226,71 @@ export default function Dashboard() {
       onOk: async () => {
         try {
           await diagramsApi.remove(diagram.diagramId);
+          Toast.success(t("move_to_recycle_bin"));
           reload();
         } catch (err) {
           console.warn("delete diagram failed", err);
-          setError("删除失败");
+          Toast.error(t("move_to_recycle_bin_failed"));
         }
+      },
+    });
+  };
+
+  const restoreDiagram = async (diagram) => {
+    try {
+      await diagramsApi.restore(diagram.diagramId);
+      Toast.success(t("restore_success"));
+      reload();
+    } catch (err) {
+      console.warn("restore diagram failed", err);
+      Toast.error(t("restore_failed"));
+    }
+  };
+
+  const permanentDeleteDiagram = (diagram) => {
+    Modal.confirm({
+      title: t("delete_permanently"),
+      content: t("are_you_sure_delete_permanently", { name: diagram.name }),
+      okText: t("delete_permanently"),
+      okButtonProps: { type: "danger" },
+      cancelText: t("cancel"),
+      onOk: async () => {
+        try {
+          await diagramsApi.permanentDelete(diagram.diagramId);
+          Toast.success(t("delete_permanently"));
+          reload();
+        } catch (err) {
+          console.warn("permanent delete failed", err);
+          Toast.error(t("permanent_delete_failed"));
+        }
+      },
+    });
+  };
+
+  const emptyTrash = () => {
+    if (trashed.length === 0) return;
+    Modal.confirm({
+      title: t("empty_recycle_bin"),
+      content: t("are_you_sure_empty_recycle_bin"),
+      okText: t("empty_recycle_bin"),
+      okButtonProps: { type: "danger" },
+      cancelText: t("cancel"),
+      onOk: async () => {
+        let failed = 0;
+        for (const d of trashed) {
+          try {
+            await diagramsApi.permanentDelete(d.diagramId);
+          } catch (err) {
+            console.warn("permanent delete failed", err);
+            failed += 1;
+          }
+        }
+        if (failed === 0) {
+          Toast.success(t("empty_recycle_bin_success"));
+        } else {
+          Toast.error(t("empty_recycle_bin_failed"));
+        }
+        reload();
       },
     });
   };
@@ -296,6 +399,40 @@ export default function Dashboard() {
                   key={d.diagramId}
                   diagram={d}
                   onOpen={openDiagram}
+                />
+              ))}
+            </div>
+          )}
+        </Section>
+
+        <Section
+          title={t("recycle_bin")}
+          count={trashed.length}
+          action={
+            trashed.length > 0 ? (
+              <Button
+                type="danger"
+                theme="light"
+                size="small"
+                onClick={emptyTrash}
+              >
+                {t("empty_recycle_bin")}
+              </Button>
+            ) : null
+          }
+        >
+          {loading ? null : trashed.length === 0 ? (
+            <div className="rounded-lg border-2 border-dashed border-zinc-200 dark:border-zinc-700 p-6">
+              <Empty description={t("recycle_bin_empty")} />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {trashed.map((d) => (
+                <TrashedDiagramCard
+                  key={d.diagramId}
+                  diagram={d}
+                  onRestore={restoreDiagram}
+                  onPermanentDelete={permanentDeleteDiagram}
                 />
               ))}
             </div>

@@ -25,9 +25,26 @@ const en = {
     rename: "Rename",
     delete_diagram: "Delete diagram",
     are_you_sure_delete_diagram:
-      "Are you sure you want to delete this diagram? This operation is irreversible.",
+      "Are you sure you want to delete this diagram? It will be moved to the recycle bin and can be restored.",
     are_you_sure_delete_table:
       "Are you sure you want to delete this table? This operation is irreversible.",
+    move_to_recycle_bin: "Moved to recycle bin",
+    move_to_recycle_bin_failed: "Failed to move to recycle bin",
+    recycle_bin: "Recycle bin",
+    recycle_bin_empty: "Recycle bin is empty",
+    restore: "Restore",
+    restore_success: "Restored",
+    restore_failed: "Failed to restore",
+    delete_permanently: "Delete permanently",
+    are_you_sure_delete_permanently:
+      "Are you sure you want to permanently delete \"{{name}}\"? This cannot be undone.",
+    permanent_delete_failed: "Failed to delete permanently",
+    empty_recycle_bin: "Empty recycle bin",
+    are_you_sure_empty_recycle_bin:
+      "Are you sure you want to empty the recycle bin? All diagrams will be permanently deleted and cannot be recovered.",
+    empty_recycle_bin_success: "Recycle bin emptied",
+    empty_recycle_bin_failed: "Failed to empty recycle bin",
+    trashed_at: "Trashed at",
     oops_smth_went_wrong: "Oops! Something went wrong.",
     import_diagram: "Import diagram",
     import_from_source: "Import from SQL",
