@@ -527,16 +527,14 @@ export default function Table({
         footer={null}
         className="table-editor-modal"
         bodyStyle={{
-          maxHeight: "calc(100vh - 130px)",
+          height: "calc(100vh - 130px)",
           padding: 0,
-          overflowY: "auto",
+          overflow: "hidden",
         }}
         style={{ width: "880px", maxWidth: "calc(100vw - 32px)" }}
         maskClosable
       >
-        <div className="px-4 pt-2 pb-4">
-          <TableInfo data={tableData} />
-        </div>
+        <TableInfo data={tableData} />
       </Modal>
     </>
   );

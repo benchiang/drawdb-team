@@ -208,10 +208,10 @@ export default function TableInfo({ data }) {
   };
 
   return (
-    <div>
+    <div className="flex h-full flex-col overflow-hidden">
       {!hintDismissed && (
         <div
-          className="mb-2 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+          className="mx-4 mt-2 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
           role="note"
         >
           <IconAlertTriangle className="mt-0.5 shrink-0" />
@@ -229,8 +229,8 @@ export default function TableInfo({ data }) {
         </div>
       )}
 
-      <div className="sticky top-0 z-10 -mx-4 bg-zinc-50 px-4 pb-2 pt-1 shadow-[0_1px_0_0_rgba(0,0,0,0.06)]">
-        <div className="flex items-center mb-2.5">
+      <div className="shrink-0 border-b border-zinc-200 bg-zinc-50 px-4 py-2">
+        <div className="flex items-center">
           <div className="text-md font-semibold break-keep">{t("name")}:</div>
           <Input
             value={data.name}
@@ -263,30 +263,9 @@ export default function TableInfo({ data }) {
         </div>
       </div>
 
-      <SortableList
-        items={data.fields}
-        keyPrefix={`table-${data.id}`}
-        onChange={(newFields) =>
-          setTables((prev) =>
-            prev.map((t) =>
-              t.id === data.id ? { ...t, fields: newFields } : t,
-            ),
-          )
-        }
-        afterChange={() => setSaveState(State.SAVING)}
-        renderItem={(item, i) => (
-          <TableField
-            data={item}
-            tid={data.id}
-            index={i}
-            inherited={inheritedFieldNames.includes(item.name)}
-          />
-        )}
-      />
-
       {database === DB.POSTGRES && (
-        <div className="mb-2">
-          <div className="text-md font-semibold break-keep">
+        <div className="shrink-0 px-4 pt-2">
+          <div className="mb-1 text-md font-semibold break-keep">
             {t("inherits")}:
           </div>
           <Select
@@ -322,119 +301,145 @@ export default function TableInfo({ data }) {
         </div>
       )}
 
+      <div className="table-info-fields-scroller min-h-0 flex-1 overflow-y-auto px-4 pt-2">
+        <SortableList
+          items={data.fields}
+          keyPrefix={`table-${data.id}`}
+          onChange={(newFields) =>
+            setTables((prev) =>
+              prev.map((t) =>
+                t.id === data.id ? { ...t, fields: newFields } : t,
+              ),
+            )
+          }
+          afterChange={() => setSaveState(State.SAVING)}
+          renderItem={(item, i) => (
+            <TableField
+              data={item}
+              tid={data.id}
+              index={i}
+              inherited={inheritedFieldNames.includes(item.name)}
+            />
+          )}
+        />
+      </div>
+
       {data.indices.length > 0 && (
-        <Card
-          bodyStyle={{ padding: "4px" }}
-          style={{ marginTop: "12px", marginBottom: "12px" }}
-          headerLine={false}
-        >
-          <Collapse
-            activeKey={indexActiveKey}
-            keepDOM={false}
-            lazyRender
-            onChange={(itemKey) => setIndexActiveKey(itemKey)}
-            accordion
+        <div className="shrink-0 px-4 pt-2">
+          <Card
+            bodyStyle={{ padding: "4px" }}
+            headerLine={false}
           >
-            <Collapse.Panel header={t("indices")} itemKey="1">
-              {data.indices.map((idx, k) => (
-                <IndexDetails
-                  key={"index_" + k}
-                  data={idx}
-                  iid={k}
-                  tid={data.id}
-                  fields={data.fields.map((e) => ({
-                    value: e.name,
-                    label: e.name,
-                  }))}
-                />
-              ))}
-            </Collapse.Panel>
-          </Collapse>
-        </Card>
+            <Collapse
+              activeKey={indexActiveKey}
+              keepDOM={false}
+              lazyRender
+              onChange={(itemKey) => setIndexActiveKey(itemKey)}
+              accordion
+            >
+              <Collapse.Panel header={t("indices")} itemKey="1">
+                {data.indices.map((idx, k) => (
+                  <IndexDetails
+                    key={"index_" + k}
+                    data={idx}
+                    iid={k}
+                    tid={data.id}
+                    fields={data.fields.map((e) => ({
+                      value: e.name,
+                      label: e.name,
+                    }))}
+                  />
+                ))}
+              </Collapse.Panel>
+            </Collapse>
+          </Card>
+        </div>
       )}
 
       {(data.uniqueConstraints || []).length > 0 && (
-        <Card
-          bodyStyle={{ padding: "4px" }}
-          style={{ marginTop: "12px", marginBottom: "12px" }}
-          headerLine={false}
-        >
-          <Collapse
-            activeKey={uniqueActiveKey}
-            keepDOM={false}
-            lazyRender
-            onChange={(itemKey) => setUniqueActiveKey(itemKey)}
-            accordion
+        <div className="shrink-0 px-4 pt-2">
+          <Card
+            bodyStyle={{ padding: "4px" }}
+            headerLine={false}
           >
-            <Collapse.Panel header={t("unique_constraints")} itemKey="1">
-              {data.uniqueConstraints.map((uc, k) => (
-                <UniqueConstraintDetails
-                  key={"unique_constraint_" + k}
-                  data={uc}
-                  cid={k}
-                  tid={data.id}
-                  fields={data.fields.map((e) => ({
-                    value: e.name,
-                    label: e.name,
-                  }))}
-                />
-              ))}
-            </Collapse.Panel>
-          </Collapse>
-        </Card>
+            <Collapse
+              activeKey={uniqueActiveKey}
+              keepDOM={false}
+              lazyRender
+              onChange={(itemKey) => setUniqueActiveKey(itemKey)}
+              accordion
+            >
+              <Collapse.Panel header={t("unique_constraints")} itemKey="1">
+                {data.uniqueConstraints.map((uc, k) => (
+                  <UniqueConstraintDetails
+                    key={"unique_constraint_" + k}
+                    data={uc}
+                    cid={k}
+                    tid={data.id}
+                    fields={data.fields.map((e) => ({
+                      value: e.name,
+                      label: e.name,
+                    }))}
+                  />
+                ))}
+              </Collapse.Panel>
+            </Collapse>
+          </Card>
+        </div>
       )}
 
       {((data.comment && data.comment.trim() !== "") || showComment) && (
-        <Card
-          bodyStyle={{ padding: "4px" }}
-          style={{ marginTop: "12px", marginBottom: "12px" }}
-          headerLine={false}
-        >
-          <Collapse
-            activeKey={commentActiveKey}
-            onChange={(itemKey) => setCommentActiveKey(itemKey)}
-            keepDOM={false}
-            lazyRender
-            accordion
+        <div className="shrink-0 px-4 pt-2">
+          <Card
+            bodyStyle={{ padding: "4px" }}
+            headerLine={false}
           >
-            <Collapse.Panel header={t("comment")} itemKey="1">
-              <TextArea
-                field="comment"
-              value={data.comment}
-              readonly={layout.readOnly}
-              autosize
-              placeholder={t("comment")}
-              rows={1}
-              onChange={(value) =>
-                updateTable(data.id, { comment: value }, false)
-              }
-              onFocus={(e) => setEditField({ comment: e.target.value })}
-              onBlur={(e) => {
-                if (e.target.value === editField.comment) return;
-                setUndoStack((prev) => [
-                  ...prev,
-                  {
-                    action: Action.EDIT,
-                    element: ObjectType.TABLE,
-                    component: "self",
-                    tid: data.id,
-                    undo: editField,
-                    redo: { comment: e.target.value },
-                    message: t("edit_table", {
-                      tableName: e.target.value,
-                      extra: "[comment]",
-                    }),
-                  },
-                ]);
-                setRedoStack([]);
-              }}
-              />
-            </Collapse.Panel>
-          </Collapse>
-        </Card>
+            <Collapse
+              activeKey={commentActiveKey}
+              onChange={(itemKey) => setCommentActiveKey(itemKey)}
+              keepDOM={false}
+              lazyRender
+              accordion
+            >
+              <Collapse.Panel header={t("comment")} itemKey="1">
+                <TextArea
+                  field="comment"
+                  value={data.comment}
+                  readonly={layout.readOnly}
+                  autosize
+                  placeholder={t("comment")}
+                  rows={1}
+                  onChange={(value) =>
+                    updateTable(data.id, { comment: value }, false)
+                  }
+                  onFocus={(e) => setEditField({ comment: e.target.value })}
+                  onBlur={(e) => {
+                    if (e.target.value === editField.comment) return;
+                    setUndoStack((prev) => [
+                      ...prev,
+                      {
+                        action: Action.EDIT,
+                        element: ObjectType.TABLE,
+                        component: "self",
+                        tid: data.id,
+                        undo: editField,
+                        redo: { comment: e.target.value },
+                        message: t("edit_table", {
+                          tableName: e.target.value,
+                          extra: "[comment]",
+                        }),
+                      },
+                    ]);
+                    setRedoStack([]);
+                  }}
+                />
+              </Collapse.Panel>
+            </Collapse>
+          </Card>
+        </div>
       )}
 
-      <div className="sticky bottom-0 z-10 -mx-4 mt-5 border-t border-zinc-200 bg-zinc-50 px-4 py-2 shadow-[0_-1px_0_0_rgba(0,0,0,0.04)]">
+      <div className="shrink-0 border-t border-zinc-200 bg-zinc-50 px-4 py-2 mt-2">
         <div className="flex justify-between items-center gap-1">
           <ColorPicker
             usePopover={true}
