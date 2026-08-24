@@ -1,12 +1,17 @@
 # Stage 1: Build the frontend
 FROM node:20-alpine AS build
 WORKDIR /app
-# .npmrc 在前端 build 阶段和后端 production 阶段都会生效，
-# 静默 deprecation / fund 噪音。ENV 兜底应对 .npmrc 未及时 COPY 的场景。
-ENV NPM_CONFIG_DEPRECATION=false \
-    NPM_CONFIG_FUND=false
+# Suppress npm noise:
+#   --no-fund         drops "X packages are looking for funding"
+#   --no-audit        drops the post-install audit summary
+#   --loglevel=error  drops all `npm warn ...` lines, including
+#                     `npm warn deprecated eslint@9.39.5` (npm 10/11
+#                     do NOT honor `NPM_CONFIG_DEPRECATION` nor
+#                     a `deprecation=false` entry in .npmrc, so
+#                     the only reliable knob is the loglevel).
+ENV NPM_CONFIG_FUND=false
 COPY package*.json .npmrc ./
-RUN npm ci --no-fund --no-audit
+RUN npm ci --no-fund --no-audit --loglevel=error
 COPY . .
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 RUN npm run build
@@ -26,9 +31,9 @@ COPY server/package*.json ./server/
 RUN apk add --no-cache python3 make g++ \
     && npm install -g npm@10 \
     && cd server \
-    && (npm ci --omit=dev --no-fund --no-deprecation --no-audit \
+    && (npm ci --omit=dev --no-fund --no-audit --loglevel=error \
         || (echo "--- npm ci failed once, retrying with --build-from-source ---" \
-            && npm ci --omit=dev --no-fund --no-deprecation --no-audit --build-from-source))
+            && npm ci --omit=dev --no-fund --no-audit --loglevel=error --build-from-source))
 
 # Copy server source (after deps installed so source changes don't bust the layer)
 COPY server/ ./server/
