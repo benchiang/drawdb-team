@@ -165,9 +165,8 @@ const defaultTypesBase = {
     color: stringColor,
     checkDefault: (field) => true,
     hasCheck: false,
-    isSized: true,
+    isSized: false,
     hasPrecision: false,
-    defaultSize: 65535,
     hasQuotes: true,
   },
   TIME: {
@@ -647,61 +646,37 @@ const mysqlTypesBase = {
   TINYTEXT: {
     type: "TINYTEXT",
     color: stringColor,
-    checkDefault: (field) => {
-      if (strHasQuotes(field.default)) {
-        return field.default.length - 2 <= field.size;
-      }
-      return field.default.length <= field.size;
-    },
-    hasCheck: true,
-    isSized: true,
+    checkDefault: (field) => true,
+    hasCheck: false,
+    isSized: false,
     hasPrecision: false,
-    defaultSize: 65535,
     hasQuotes: true,
   },
   TEXT: {
     type: "TEXT",
     color: stringColor,
-    checkDefault: (field) => {
-      if (strHasQuotes(field.default)) {
-        return field.default.length - 2 <= field.size;
-      }
-      return field.default.length <= field.size;
-    },
-    hasCheck: true,
-    isSized: true,
+    checkDefault: (field) => true,
+    hasCheck: false,
+    isSized: false,
     hasPrecision: false,
-    defaultSize: 65535,
     hasQuotes: true,
   },
   MEDIUMTEXT: {
     type: "MEDIUMTEXT",
     color: stringColor,
-    checkDefault: (field) => {
-      if (strHasQuotes(field.default)) {
-        return field.default.length - 2 <= field.size;
-      }
-      return field.default.length <= field.size;
-    },
-    hasCheck: true,
-    isSized: true,
+    checkDefault: (field) => true,
+    hasCheck: false,
+    isSized: false,
     hasPrecision: false,
-    defaultSize: 65535,
     hasQuotes: true,
   },
   LONGTEXT: {
     type: "LONGTEXT",
     color: stringColor,
-    checkDefault: (field) => {
-      if (strHasQuotes(field.default)) {
-        return field.default.length - 2 <= field.size;
-      }
-      return field.default.length <= field.size;
-    },
-    hasCheck: true,
-    isSized: true,
+    checkDefault: (field) => true,
+    hasCheck: false,
+    isSized: false,
     hasPrecision: false,
-    defaultSize: 65535,
     hasQuotes: true,
   },
   ENUM: {
@@ -1472,10 +1447,9 @@ const sqliteTypesBase = {
     type: "TEXT",
     color: stringColor,
     checkDefault: (field) => true,
-    hasCheck: true,
-    isSized: true,
+    hasCheck: false,
+    isSized: false,
     hasPrecision: false,
-    defaultSize: 65535,
     hasQuotes: true,
   },
   BLOB: {
@@ -1838,9 +1812,8 @@ const mssqlTypesBase = {
     color: stringColor,
     checkDefault: (field) => true,
     hasCheck: false,
-    isSized: true,
+    isSized: false,
     hasPrecision: false,
-    defaultSize: 65535,
     hasQuotes: true,
   },
   NCHAR: {
@@ -1878,9 +1851,8 @@ const mssqlTypesBase = {
     color: stringColor,
     checkDefault: (field) => true,
     hasCheck: false,
-    isSized: true,
+    isSized: false,
     hasPrecision: false,
-    defaultSize: 65535,
     hasQuotes: true,
   },
   BINARY: {
