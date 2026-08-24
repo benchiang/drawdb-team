@@ -1,8 +1,14 @@
-import { Parser } from "@dbml/core";
 import { Cardinality, Constraint } from "../../data/constants";
 import { inlineEnumTypeName } from "./types";
 
-const parser = new Parser();
+// @dbml/core 体积较大，仅在 parseDbml 调用时按需初始化
+let parserPromise = null;
+function getParser() {
+  if (!parserPromise) {
+    parserPromise = import("@dbml/core").then((m) => new m.Parser());
+  }
+  return parserPromise;
+}
 
 const CONSTRAINT_BY_KEYWORD = {
   "no action": Constraint.NONE,
@@ -109,7 +115,8 @@ function foldInlineEnums(tables, enums) {
   return enums.filter((en) => !folded.has(en.name));
 }
 
-export function parseDbml(src) {
+export async function parseDbml(src) {
+  const parser = await getParser();
   const ast = parser.parse(src, "dbmlv2");
 
   const tables = [];

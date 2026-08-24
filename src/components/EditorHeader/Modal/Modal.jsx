@@ -7,8 +7,6 @@ import {
   Toast,
 } from "@douyinfe/semi-ui";
 import { saveAs } from "file-saver";
-import { Parser } from "node-sql-parser";
-import { Parser as OracleParser } from "oracle-sql-parser";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DB, MODAL, STATUS } from "../../../data/constants";
@@ -26,7 +24,6 @@ import {
 } from "../../../hooks";
 import { isRtl } from "../../../i18n/utils/rtl";
 import { useExtensions } from "../../../context/ExtensionsContext";
-import { importSQL } from "../../../utils/importSQL";
 import {
   allowedTypesFor,
   normalizeAiDiagram,
@@ -119,18 +116,20 @@ export default function Modal({
     }
   };
 
-  const parseSQLAndLoadDiagram = () => {
+  const parseSQLAndLoadDiagram = async () => {
     const targetDatabase = database === DB.GENERIC ? importDb : database;
 
     let ast = null;
     try {
       if (targetDatabase === DB.ORACLESQL) {
+        // 动态 import：oracle-sql-parser 只在导入 Oracle SQL 时按需加载
+        const { Parser: OracleParser } = await import("oracle-sql-parser");
         const oracleParser = new OracleParser();
-
         ast = oracleParser.parse(importSource.src);
       } else {
+        // 动态 import：node-sql-parser 体积 ~13MB，移出主 bundle
+        const { Parser } = await import("node-sql-parser");
         const parser = new Parser();
-
         ast = parser.astify(importSource.src, {
           database: targetDatabase,
         });
@@ -145,6 +144,8 @@ export default function Modal({
     }
 
     try {
+      // 动态 import：解析后端方言映射按需加载
+      const { importSQL } = await import("../../../utils/importSQL");
       const diagramData = importSQL(
         ast,
         database === DB.GENERIC ? importDb : database,

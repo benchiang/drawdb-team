@@ -121,7 +121,7 @@ export default function DBMLEditor({ onProblemsChange }) {
     onProblemsChangeRef.current?.(found);
   }, []);
 
-  const applyDraft = useCallback(() => {
+  const applyDraft = useCallback(async () => {
     cancelPendingApply();
     const draft = draftRef.current;
     if (draft === null || readOnlyRef.current) return;
@@ -130,7 +130,7 @@ export default function DBMLEditor({ onProblemsChange }) {
     let next;
     let plan;
     try {
-      const parsed = parseDbml(draft);
+      const parsed = await parseDbml(draft);
       next = reconcileDbml(parsed, base, base.database);
       plan = diffDiagram(base, next);
     } catch (error) {

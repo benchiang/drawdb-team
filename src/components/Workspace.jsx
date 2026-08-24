@@ -32,7 +32,7 @@ import {
   useNavigateWithParams,
 } from "../hooks";
 import FloatingControls from "./FloatingControls";
-import { Button, Modal, Tag } from "@douyinfe/semi-ui";
+import { Button, Modal, Tag, Toast } from "@douyinfe/semi-ui";
 import { IconAlertTriangle } from "@douyinfe/semi-icons";
 import { useTranslation } from "react-i18next";
 import { databases } from "../data/databases";
@@ -208,12 +208,7 @@ export default function WorkSpace({ forcedDiagramId } = {}) {
         if (err?.response?.data?.error === "read_only") {
           // 权限被改成只读后，强制把编辑器切到只读模式，避免持续失败
           setLayout((prev) => ({ ...prev, readOnly: true }));
-          try {
-            const { Toast } = await import("@douyinfe/semi-ui");
-            Toast.warning("你对此图只有只读权限，已自动切换为只读模式");
-          } catch {
-            /* toast 不可用也不影响 */
-          }
+          Toast.warning("你对此图只有只读权限，已自动切换为只读模式");
         }
         setSaveState(State.ERROR);
       }
