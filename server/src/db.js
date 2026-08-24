@@ -41,7 +41,7 @@ function migrate(db) {
 
     CREATE INDEX IF NOT EXISTS idx_diagrams_owner ON diagrams(owner_id);
     CREATE INDEX IF NOT EXISTS idx_diagrams_last_modified ON diagrams(last_modified);
-    CREATE INDEX IF NOT EXISTS idx_diagrams_deleted_at ON diagrams(deleted_at);
+    -- idx_diagrams_deleted_at 必须在 ensureColumn 之后建（旧库补列后才能引用）
 
     CREATE TABLE IF NOT EXISTS templates (
       id TEXT PRIMARY KEY,
