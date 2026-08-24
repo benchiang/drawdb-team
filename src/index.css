@@ -107,9 +107,18 @@
   background-color: rgba(var(--semi-grey-4), 1);
 }
 
-/* 表编辑 Modal：字段行区域内独立滚动；
-   只在 .table-info-fields-scroller 上展示自定义滚动条，
-   Modal 本身高度固定、overflow hidden，避免外层 body 一起滚动 */
+/* 表编辑 Modal：固定 body 高度并锁住 overflow，
+   让唯一的滚动条只出现在 .table-info-fields-scroller 上，
+   卡片 / 名称 / 底部按钮区域均不会被滚动条覆盖 */
+.table-editor-modal .semi-modal-body {
+  height: calc(100vh - 130px);
+  max-height: calc(100vh - 130px);
+  overflow: hidden !important;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
 .table-editor-modal .table-info-fields-scroller::-webkit-scrollbar {
   width: 10px;
 }

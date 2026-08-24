@@ -301,29 +301,6 @@ export default function TableInfo({ data }) {
         </div>
       )}
 
-      <div className="table-info-fields-scroller min-h-0 flex-1 overflow-y-auto px-4 pt-2">
-        <SortableList
-          items={data.fields}
-          keyPrefix={`table-${data.id}`}
-          onChange={(newFields) =>
-            setTables((prev) =>
-              prev.map((t) =>
-                t.id === data.id ? { ...t, fields: newFields } : t,
-              ),
-            )
-          }
-          afterChange={() => setSaveState(State.SAVING)}
-          renderItem={(item, i) => (
-            <TableField
-              data={item}
-              tid={data.id}
-              index={i}
-              inherited={inheritedFieldNames.includes(item.name)}
-            />
-          )}
-        />
-      </div>
-
       {data.indices.length > 0 && (
         <div className="shrink-0 px-4 pt-2">
           <Card
@@ -438,6 +415,29 @@ export default function TableInfo({ data }) {
           </Card>
         </div>
       )}
+
+      <div className="table-info-fields-scroller min-h-0 flex-1 overflow-y-auto px-4 pt-2">
+        <SortableList
+          items={data.fields}
+          keyPrefix={`table-${data.id}`}
+          onChange={(newFields) =>
+            setTables((prev) =>
+              prev.map((t) =>
+                t.id === data.id ? { ...t, fields: newFields } : t,
+              ),
+            )
+          }
+          afterChange={() => setSaveState(State.SAVING)}
+          renderItem={(item, i) => (
+            <TableField
+              data={item}
+              tid={data.id}
+              index={i}
+              inherited={inheritedFieldNames.includes(item.name)}
+            />
+          )}
+        />
+      </div>
 
       <div className="shrink-0 border-t border-zinc-200 bg-zinc-50 px-4 py-2 mt-2">
         <div className="flex justify-between items-center gap-1">
