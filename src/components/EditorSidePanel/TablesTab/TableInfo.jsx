@@ -128,7 +128,7 @@ export default function TableInfo({
       </div>
 
       {/* 中部可滚动区：字段列表 + Indices / UQ / Comment / Inherits */}
-      <div className="table-editor-modal-scrollable flex-1 min-h-0 overflow-y-auto pt-2 pb-4">
+      <div className="table-editor-modal-scrollable flex-1 min-h-0 overflow-y-auto px-4 pt-2 pb-4">
         <SortableList
           items={data.fields}
           keyPrefix={`table-${data.id}`}
