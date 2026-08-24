@@ -1,7 +1,6 @@
 import { useState } from "react";
 import {
   Collapse,
-  Input,
   TextArea,
   Button,
   Card,
@@ -88,40 +87,6 @@ export default function TableInfo({
           </Button>
         </div>
       )}
-
-      <div className="sticky top-0 z-10 -mx-4 bg-zinc-50 px-4 pb-2 pt-1 shadow-[0_1px_0_0_rgba(0,0,0,0.06)]">
-        <div className="flex items-center mb-2.5">
-          <div className="text-md font-semibold break-keep">{t("name")}:</div>
-          <Input
-            value={data.name}
-            validateStatus={data.name.trim() === "" ? "error" : "default"}
-            placeholder={t("name")}
-            className="ms-2"
-            readonly={layout.readOnly}
-            onChange={(value) => updateTable(data.id, { name: value })}
-            onFocus={(e) => setEditField({ name: e.target.value })}
-            onBlur={(e) => {
-              if (e.target.value === editField.name) return;
-              setUndoStack((prev) => [
-                ...prev,
-                {
-                  action: Action.EDIT,
-                  element: ObjectType.TABLE,
-                  component: "self",
-                  tid: data.id,
-                  undo: editField,
-                  redo: { name: e.target.value },
-                  message: t("edit_table", {
-                    tableName: e.target.value,
-                    extra: "[name]",
-                  }),
-                },
-              ]);
-              setRedoStack([]);
-            }}
-          />
-        </div>
-      </div>
 
       <SortableList
         items={data.fields}

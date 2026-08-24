@@ -25,6 +25,7 @@ import {
   Button,
   ButtonGroup,
   Divider,
+  Input,
   Modal,
 } from "@douyinfe/semi-ui";
 import {
@@ -65,6 +66,8 @@ export default function Table({
   const [uqPanelKey, setUqPanelKey] = useState("");
   const [commentPanelKey, setCommentPanelKey] = useState("");
   const [showCommentCard, setShowCommentCard] = useState(false);
+  // Modal 顶部表名 Input 在 onFocus 时刻的快照，用于 onBlur 时构造 undo 记录。
+  const [nameEditSnapshot, setNameEditSnapshot] = useState("");
   const { layout } = useLayout();
   const {
     database,
@@ -514,9 +517,42 @@ export default function Table({
       </foreignObject>
       <Modal
         title={
-          <span className="font-semibold">
-            {t("edit_table", { extra: "", tableName: tableData.name })}
-          </span>
+          <div className="flex items-center gap-2 pr-2">
+            <span className="shrink-0 text-sm font-semibold text-zinc-500">
+              {t("name")}:
+            </span>
+            <Input
+              size="small"
+              value={tableData.name}
+              validateStatus={
+                tableData.name.trim() === "" ? "error" : "default"
+              }
+              placeholder={t("name")}
+              className="flex-1"
+              readonly={layout.readOnly}
+              onChange={(value) => updateTable(tableData.id, { name: value })}
+              onFocus={(e) => setNameEditSnapshot(e.target.value)}
+              onBlur={(e) => {
+                if (e.target.value === nameEditSnapshot) return;
+                setUndoStack((prev) => [
+                  ...prev,
+                  {
+                    action: Action.EDIT,
+                    element: ObjectType.TABLE,
+                    component: "self",
+                    tid: tableData.id,
+                    undo: { name: nameEditSnapshot },
+                    redo: { name: e.target.value },
+                    message: t("edit_table", {
+                      tableName: e.target.value,
+                      extra: "[name]",
+                    }),
+                  },
+                ]);
+                setRedoStack([]);
+              }}
+            />
+          </div>
         }
         size="large"
         centered
