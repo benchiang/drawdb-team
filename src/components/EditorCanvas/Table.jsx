@@ -517,41 +517,48 @@ export default function Table({
       </foreignObject>
       <Modal
         title={
-          <div className="flex items-center gap-2 pr-2">
-            <span className="shrink-0 text-sm font-semibold text-zinc-500">
-              {t("name")}:
+          <div className="flex flex-col gap-1.5 pr-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+              {t("modal_edit_table_title")}
             </span>
-            <Input
-              size="small"
-              value={tableData.name}
-              validateStatus={
-                tableData.name.trim() === "" ? "error" : "default"
-              }
-              placeholder={t("name")}
-              className="flex-1"
-              readonly={layout.readOnly}
-              onChange={(value) => updateTable(tableData.id, { name: value })}
-              onFocus={(e) => setNameEditSnapshot(e.target.value)}
-              onBlur={(e) => {
-                if (e.target.value === nameEditSnapshot) return;
-                setUndoStack((prev) => [
-                  ...prev,
-                  {
-                    action: Action.EDIT,
-                    element: ObjectType.TABLE,
-                    component: "self",
-                    tid: tableData.id,
-                    undo: { name: nameEditSnapshot },
-                    redo: { name: e.target.value },
-                    message: t("edit_table", {
-                      tableName: e.target.value,
-                      extra: "[name]",
-                    }),
-                  },
-                ]);
-                setRedoStack([]);
-              }}
-            />
+            <div className="flex items-center gap-2">
+              <span className="shrink-0 text-sm text-zinc-700">
+                {t("name")}:
+              </span>
+              <Input
+                size="small"
+                value={tableData.name}
+                validateStatus={
+                  tableData.name.trim() === "" ? "error" : "default"
+                }
+                placeholder={t("name")}
+                className="flex-1"
+                readonly={layout.readOnly}
+                onChange={(value) =>
+                  updateTable(tableData.id, { name: value })
+                }
+                onFocus={(e) => setNameEditSnapshot(e.target.value)}
+                onBlur={(e) => {
+                  if (e.target.value === nameEditSnapshot) return;
+                  setUndoStack((prev) => [
+                    ...prev,
+                    {
+                      action: Action.EDIT,
+                      element: ObjectType.TABLE,
+                      component: "self",
+                      tid: tableData.id,
+                      undo: { name: nameEditSnapshot },
+                      redo: { name: e.target.value },
+                      message: t("edit_table", {
+                        tableName: e.target.value,
+                        extra: "[name]",
+                      }),
+                    },
+                  ]);
+                  setRedoStack([]);
+                }}
+              />
+            </div>
           </div>
         }
         size="large"
@@ -580,7 +587,7 @@ export default function Table({
         }
         className="table-editor-modal"
         bodyStyle={{
-          maxHeight: "calc(100vh - 320px)",
+          maxHeight: "calc(100vh - 360px)",
           padding: 0,
           overflowY: "auto",
         }}

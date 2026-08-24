@@ -244,6 +244,7 @@ const en = {
     edit_note: "{{extra}} Edit note {{noteTitle}}",
     delete_note: "Delete note {{noteTitle}}",
     edit_table: "{{extra}} Edit table {{tableName}}",
+    modal_edit_table_title: "Edit table",
     delete_table: "Delete table {{tableName}}",
     edit_type: "{{extra}} Edit type {{typeName}}",
     delete_type: "Delete type {{typeName}}",
