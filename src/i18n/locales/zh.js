@@ -153,6 +153,8 @@ const zh = {
     cannot_connect: "无法连接，列具有不同的类型",
     copied_to_clipboard: "已复制到剪贴板",
     create_new_diagram: "创建新图表",
+    select_database_tip: "请选择该图表对应的数据库方言，后续可在编辑器内切换。",
+    last_used: "上次使用",
     cancel: "取消",
     open_diagram: "打开图表",
     rename_diagram: "重命名图表",

@@ -17,6 +17,7 @@ import { diagramsApi } from "../api/diagrams";
 import { subscribe, TOPICS } from "../api/storeBus";
 import { useAuth } from "../context/AuthContext";
 import ChangePasswordModal from "../components/Dashboard/ChangePasswordModal";
+import NewDiagramModal from "../components/Dashboard/NewDiagramModal";
 import { databases } from "../data/databases";
 import { DB } from "../data/constants";
 import logo from "../assets/logo_light_160.png";
@@ -106,6 +107,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [pwdModalVisible, setPwdModalVisible] = useState(false);
 
   const reload = useCallback(async () => {
@@ -144,14 +146,14 @@ export default function Dashboard() {
     navigate(`/editor/diagrams/${id}`);
   };
 
-  const createDiagram = async () => {
+  const createDiagram = async (database) => {
     if (creating) return;
     setCreating(true);
     try {
       const newId = uuidv4();
       await diagramsApi.create({
         diagramId: newId,
-        database: DB.GENERIC,
+        database: database || DB.GENERIC,
         name: "Untitled Diagram",
         lastModified: new Date(),
         tables: [],
@@ -161,6 +163,7 @@ export default function Dashboard() {
         pan: { x: 0, y: 0 },
         zoom: 1,
       });
+      setPickerOpen(false);
       navigate(`/editor/diagrams/${newId}`);
     } catch (err) {
       console.warn("create diagram failed", err);
@@ -253,8 +256,7 @@ export default function Dashboard() {
             <Button
               type="primary"
               icon={<IconPlus />}
-              loading={creating}
-              onClick={createDiagram}
+              onClick={() => setPickerOpen(true)}
             >
               新建图
             </Button>
@@ -309,6 +311,12 @@ export default function Dashboard() {
       <ChangePasswordModal
         visible={pwdModalVisible}
         onCancel={() => setPwdModalVisible(false)}
+      />
+      <NewDiagramModal
+        visible={pickerOpen}
+        creating={creating}
+        onCancel={() => !creating && setPickerOpen(false)}
+        onConfirm={createDiagram}
       />
     </div>
   );

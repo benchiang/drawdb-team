@@ -168,6 +168,9 @@ const en = {
     cannot_connect: "Cannot connect, the columns have different types",
     copied_to_clipboard: "Copied to clipboard",
     create_new_diagram: "Create new diagram",
+    select_database_tip:
+      "Choose the database dialect for this diagram. You can change it later in the editor.",
+    last_used: "Last used",
     cancel: "Cancel",
     open_diagram: "Open diagram",
     rename_diagram: "Rename diagram",
