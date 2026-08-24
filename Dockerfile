@@ -22,7 +22,8 @@ RUN npm run build
 FROM node:20-alpine AS production
 WORKDIR /app
 ENV NODE_ENV=production \
-    NPM_CONFIG_FUND=false
+    NPM_CONFIG_FUND=false \
+    NPM_CONFIG_UPDATE_NOTIFIER=false
 # better-sqlite3 编译/链接所需的工具链
 # python3 / make / g++ 用于 node-gyp 兜底编译；sqlite 头文件由 better-sqlite3 自带
 # 同时安装后端生产依赖（保持层缓存：只要 server/package*.json 未变就复用）
