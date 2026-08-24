@@ -190,6 +190,9 @@ const en = {
     last_used: "Last used",
     cancel: "Cancel",
     done: "Done",
+    got_it: "Got it",
+    table_modal_hint:
+      "Edit fields, indices, unique constraints, color and comment here. Changes are saved live; press Esc or click outside to close.",
     open_diagram: "Open diagram",
     rename_diagram: "Rename diagram",
     export: "Export",

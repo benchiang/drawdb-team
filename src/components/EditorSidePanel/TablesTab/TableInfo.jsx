@@ -10,11 +10,17 @@ import {
   Modal,
 } from "@douyinfe/semi-ui";
 import ColorPicker from "../ColorPicker";
-import { IconDeleteStroked, IconPlus } from "@douyinfe/semi-icons";
+import {
+  IconAlertTriangle,
+  IconCopyStroked,
+  IconDeleteStroked,
+  IconPlus,
+} from "@douyinfe/semi-icons";
 import {
   useDiagram,
   useLayout,
   useSaveState,
+  useSelect,
   useUndoRedo,
 } from "../../../hooks";
 import { Action, ObjectType, State, DB } from "../../../data/constants";
@@ -25,6 +31,8 @@ import { useTranslation } from "react-i18next";
 import { SortableList } from "../../SortableList/SortableList";
 import { nanoid } from "nanoid";
 
+const TABLE_MODAL_HINT_KEY = "drawdb.tableModalHintShown";
+
 export default function TableInfo({ data }) {
   const { tables, database } = useDiagram();
   const { t } = useTranslation();
@@ -32,12 +40,63 @@ export default function TableInfo({ data }) {
   const [uniqueActiveKey, setUniqueActiveKey] = useState("");
   const [commentActiveKey, setCommentActiveKey] = useState("");
   const [showComment, setShowComment] = useState(false);
+  const [hintDismissed, setHintDismissed] = useState(() => {
+    try {
+      return localStorage.getItem(TABLE_MODAL_HINT_KEY) === "1";
+    } catch {
+      return true;
+    }
+  });
   const { layout } = useLayout();
-  const { deleteTable, updateTable, setTables } = useDiagram();
+  const { deleteTable, updateTable, setTables, addTable } = useDiagram();
+  const { setSelectedElement } = useSelect();
   const { setUndoStack, setRedoStack } = useUndoRedo();
   const { setSaveState } = useSaveState();
   const [editField, setEditField] = useState({});
   const initialColorRef = useRef(data.color);
+
+  const dismissHint = () => {
+    setHintDismissed(true);
+    try {
+      localStorage.setItem(TABLE_MODAL_HINT_KEY, "1");
+    } catch {
+      /* localStorage 不可用时静默 */
+    }
+  };
+
+  const handleDuplicate = () => {
+    if (layout.readOnly) return;
+    const newId = nanoid();
+    const duplicated = {
+      ...data,
+      id: newId,
+      name: `${data.name || "table"}_copy`,
+      fields: data.fields.map((f) => ({ ...f, id: nanoid() })),
+      indices: (data.indices || []).map((idx) => ({ ...idx, id: nanoid() })),
+      uniqueConstraints: (data.uniqueConstraints || []).map((uc) => ({
+        ...uc,
+        id: nanoid(),
+      })),
+    };
+    setUndoStack((prev) => [
+      ...prev,
+      {
+        data: { table: duplicated, index: tables.length },
+        action: Action.ADD,
+        element: ObjectType.TABLE,
+        message: t("duplicate_table_by_name", { tableName: data.name }),
+      },
+    ]);
+    setRedoStack([]);
+    addTable({ table: duplicated }, false);
+    // 切换 Modal 内容到新表，保持 Modal 打开
+    setSelectedElement((prev) => ({
+      ...prev,
+      element: ObjectType.TABLE,
+      id: newId,
+      open: true,
+    }));
+  };
 
   const handleColorPick = (color) => {
     setUndoStack((prev) => {
@@ -150,36 +209,58 @@ export default function TableInfo({ data }) {
 
   return (
     <div>
-      <div className="flex items-center mb-2.5">
-        <div className="text-md font-semibold break-keep">{t("name")}:</div>
-        <Input
-          value={data.name}
-          validateStatus={data.name.trim() === "" ? "error" : "default"}
-          placeholder={t("name")}
-          className="ms-2"
-          readonly={layout.readOnly}
-          onChange={(value) => updateTable(data.id, { name: value })}
-          onFocus={(e) => setEditField({ name: e.target.value })}
-          onBlur={(e) => {
-            if (e.target.value === editField.name) return;
-            setUndoStack((prev) => [
-              ...prev,
-              {
-                action: Action.EDIT,
-                element: ObjectType.TABLE,
-                component: "self",
-                tid: data.id,
-                undo: editField,
-                redo: { name: e.target.value },
-                message: t("edit_table", {
-                  tableName: e.target.value,
-                  extra: "[name]",
-                }),
-              },
-            ]);
-            setRedoStack([]);
-          }}
-        />
+      {!hintDismissed && (
+        <div
+          className="mb-2 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+          role="note"
+        >
+          <IconAlertTriangle className="mt-0.5 shrink-0" />
+          <div className="flex-1 leading-relaxed">
+            {t("table_modal_hint")}
+          </div>
+          <Button
+            size="small"
+            type="tertiary"
+            theme="borderless"
+            onClick={dismissHint}
+          >
+            {t("got_it")}
+          </Button>
+        </div>
+      )}
+
+      <div className="sticky top-0 z-10 -mx-4 bg-zinc-50 px-4 pb-2 pt-1 shadow-[0_1px_0_0_rgba(0,0,0,0.06)]">
+        <div className="flex items-center mb-2.5">
+          <div className="text-md font-semibold break-keep">{t("name")}:</div>
+          <Input
+            value={data.name}
+            validateStatus={data.name.trim() === "" ? "error" : "default"}
+            placeholder={t("name")}
+            className="ms-2"
+            readonly={layout.readOnly}
+            onChange={(value) => updateTable(data.id, { name: value })}
+            onFocus={(e) => setEditField({ name: e.target.value })}
+            onBlur={(e) => {
+              if (e.target.value === editField.name) return;
+              setUndoStack((prev) => [
+                ...prev,
+                {
+                  action: Action.EDIT,
+                  element: ObjectType.TABLE,
+                  component: "self",
+                  tid: data.id,
+                  undo: editField,
+                  redo: { name: e.target.value },
+                  message: t("edit_table", {
+                    tableName: e.target.value,
+                    extra: "[name]",
+                  }),
+                },
+              ]);
+              setRedoStack([]);
+            }}
+          />
+        </div>
       </div>
 
       <SortableList
@@ -353,95 +434,112 @@ export default function TableInfo({ data }) {
         </Card>
       )}
 
-      <div className="flex justify-between items-center gap-1 mt-5 mb-2">
-        <ColorPicker
-          usePopover={true}
-          readOnly={layout.readOnly}
-          value={data.color}
-          onChange={(color) => updateTable(data.id, { color })}
-          onColorPick={(color) => handleColorPick(color)}
-        />
-        <div className="flex gap-1">
-          <Dropdown
-            position="bottomLeft"
-            trigger="click"
-            render={
-              <Dropdown.Menu>
-                <Dropdown.Item onClick={addComment}>
-                  {t("add_comment")}
-                </Dropdown.Item>
-                <Dropdown.Item onClick={addUniqueConstraint}>
-                  {t("add_unique_constraint")}
-                </Dropdown.Item>
-                <Dropdown.Item onClick={addIndex}>
-                  {t("add_index")}
-                </Dropdown.Item>
-              </Dropdown.Menu>
-            }
-          >
-            <Button
-              icon={<IconPlus />}
-              disabled={layout.readOnly}
-              title={t("add")}
-            />
-          </Dropdown>
-          <Button
-            block
-            disabled={layout.readOnly}
-            onClick={() => {
-              const id = nanoid();
-              setUndoStack((prev) => [
-                ...prev,
-                {
-                  action: Action.EDIT,
-                  element: ObjectType.TABLE,
-                  component: "field_add",
-                  tid: data.id,
-                  fid: id,
-                  message: t("edit_table", {
-                    tableName: data.name,
-                    extra: "[add field]",
-                  }),
-                },
-              ]);
-              setRedoStack([]);
-              updateTable(data.id, {
-                fields: [
-                  ...data.fields,
-                  {
-                    id,
-                    name: "",
-                    type: "",
-                    default: "",
-                    check: "",
-                    primary: false,
-                    unique: false,
-                    notNull: false,
-                    increment: false,
-                    comment: "",
-                  },
-                ],
-              });
-            }}
-          >
-            {t("add_field")}
-          </Button>
-          <Button
-            type="danger"
-            disabled={layout.readOnly}
-            icon={<IconDeleteStroked />}
-            onClick={() => {
-              if (layout.readOnly) return;
-              Modal.confirm({
-                title: t("delete_table", { tableName: data.name || "table" }),
-                content: t("are_you_sure_delete_table"),
-                okText: t("delete"),
-                okButtonProps: { type: "danger" },
-                cancelText: t("cancel"),
-                onOk: () => deleteTable(data.id),
-              });
-            }}
+      <div className="sticky bottom-0 z-10 -mx-4 mt-5 border-t border-zinc-200 bg-zinc-50 px-4 py-2 shadow-[0_-1px_0_0_rgba(0,0,0,0.04)]">
+        <div className="flex justify-between items-center gap-1">
+          <ColorPicker
+            usePopover={true}
+            readOnly={layout.readOnly}
+            value={data.color}
+            onChange={(color) => updateTable(data.id, { color })}
+            onColorPick={(color) => handleColorPick(color)}
           />
+          <div className="flex gap-1">
+            <Dropdown
+              position="bottomLeft"
+              trigger="click"
+              render={
+                <Dropdown.Menu>
+                  <Dropdown.Item onClick={addComment}>
+                    {t("add_comment")}
+                  </Dropdown.Item>
+                  <Dropdown.Item onClick={addUniqueConstraint}>
+                    {t("add_unique_constraint")}
+                  </Dropdown.Item>
+                  <Dropdown.Item onClick={addIndex}>
+                    {t("add_index")}
+                  </Dropdown.Item>
+                </Dropdown.Menu>
+              }
+            >
+              <Button
+                icon={<IconPlus />}
+                disabled={layout.readOnly}
+                title={t("add")}
+              />
+            </Dropdown>
+            <Button
+              block
+              disabled={layout.readOnly}
+              onClick={() => {
+                const id = nanoid();
+                setUndoStack((prev) => [
+                  ...prev,
+                  {
+                    action: Action.EDIT,
+                    element: ObjectType.TABLE,
+                    component: "field_add",
+                    tid: data.id,
+                    fid: id,
+                    message: t("edit_table", {
+                      tableName: data.name,
+                      extra: "[add field]",
+                    }),
+                  },
+                ]);
+                setRedoStack([]);
+                updateTable(data.id, {
+                  fields: [
+                    ...data.fields,
+                    {
+                      id,
+                      name: "",
+                      type: "",
+                      default: "",
+                      check: "",
+                      primary: false,
+                      unique: false,
+                      notNull: false,
+                      increment: false,
+                      comment: "",
+                    },
+                  ],
+                });
+              }}
+            >
+              {t("add_field")}
+            </Button>
+            <Button
+              type="tertiary"
+              theme="light"
+              disabled={layout.readOnly}
+              icon={<IconCopyStroked />}
+              title={t("duplicate")}
+              onClick={handleDuplicate}
+            />
+            <Button
+              type="danger"
+              disabled={layout.readOnly}
+              icon={<IconDeleteStroked />}
+              onClick={() => {
+                if (layout.readOnly) return;
+                Modal.confirm({
+                  title: t("delete_table", { tableName: data.name || "table" }),
+                  content: t("are_you_sure_delete_table"),
+                  okText: t("delete"),
+                  okButtonProps: { type: "danger" },
+                  cancelText: t("cancel"),
+                  onOk: () => {
+                    deleteTable(data.id);
+                    setSelectedElement({
+                      element: ObjectType.NONE,
+                      id: null,
+                      open: false,
+                    });
+                  },
+                });
+              }}
+            />
+          </div>
         </div>
       </div>
     </div>

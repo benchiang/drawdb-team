@@ -173,6 +173,9 @@ const zh = {
     cancel: "取消",
     done: "完成",
     close: "关闭",
+    got_it: "我知道了",
+    table_modal_hint:
+      "在此直接编辑字段、索引、唯一约束、颜色与备注。修改会实时保存，按 Esc 或点击外部即可关闭。",
     open_diagram: "打开图表",
     rename_diagram: "重命名图表",
     export: "导出",
