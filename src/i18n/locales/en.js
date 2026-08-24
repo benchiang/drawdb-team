@@ -189,6 +189,7 @@ const en = {
       "Choose the database dialect for this diagram. You can change it later in the editor.",
     last_used: "Last used",
     cancel: "Cancel",
+    done: "Done",
     open_diagram: "Open diagram",
     rename_diagram: "Rename diagram",
     export: "Export",

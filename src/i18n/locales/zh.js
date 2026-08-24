@@ -171,6 +171,8 @@ const zh = {
     select_database_tip: "请选择该图表对应的数据库方言，后续可在编辑器内切换。",
     last_used: "上次使用",
     cancel: "取消",
+    done: "完成",
+    close: "关闭",
     open_diagram: "打开图表",
     rename_diagram: "重命名图表",
     export: "导出",

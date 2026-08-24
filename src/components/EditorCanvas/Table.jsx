@@ -24,7 +24,6 @@ import {
   Tag,
   Button,
   ButtonGroup,
-  SideSheet,
   Divider,
   Modal,
 } from "@douyinfe/semi-ui";
@@ -216,26 +215,18 @@ export default function Table({
   };
 
   const openEditor = () => {
-    if (!layout.sidebar) {
-      setSelectedElement((prev) => ({
-        ...prev,
-        element: ObjectType.TABLE,
-        id: tableData.id,
-        open: true,
-      }));
-    } else {
-      setSelectedElement((prev) => ({
-        ...prev,
-        currentTab: Tab.TABLES,
-        element: ObjectType.TABLE,
-        id: tableData.id,
-        open: true,
-      }));
-      if (selectedElement.currentTab !== Tab.TABLES) return;
-      document
-        .getElementById(`scroll_table_${tableData.id}`)
-        .scrollIntoView({ behavior: "smooth" });
-    }
+    setSelectedElement((prev) => ({
+      ...prev,
+      currentTab: layout.sidebar ? Tab.TABLES : prev.currentTab,
+      element: ObjectType.TABLE,
+      id: tableData.id,
+      open: true,
+    }));
+    if (!layout.sidebar) return;
+    if (selectedElement.currentTab !== Tab.TABLES) return;
+    document
+      .getElementById(`scroll_table_${tableData.id}`)
+      .scrollIntoView({ behavior: "smooth" });
   };
 
   const getFieldReference = (fieldData) => {
@@ -514,14 +505,18 @@ export default function Table({
           })}
         </div>
       </foreignObject>
-      <SideSheet
-        title={t("edit")}
-        size="small"
+      <Modal
+        title={
+          <span className="font-semibold">
+            {t("edit_table", { extra: "", tableName: tableData.name })}
+          </span>
+        }
+        size="large"
+        centered
         visible={
           selectedElement.element === ObjectType.TABLE &&
           selectedElement.id === tableData.id &&
-          selectedElement.open &&
-          !layout.sidebar
+          selectedElement.open
         }
         onCancel={() =>
           setSelectedElement((prev) => ({
@@ -529,12 +524,25 @@ export default function Table({
             open: !prev.open,
           }))
         }
-        style={{ paddingBottom: "16px" }}
+        onOk={() =>
+          setSelectedElement((prev) => ({
+            ...prev,
+            open: !prev.open,
+          }))
+        }
+        okText={t("done")}
+        cancelText={t("close")}
+        bodyStyle={{
+          maxHeight: "calc(100vh - 220px)",
+          padding: 0,
+        }}
+        style={{ width: "880px", maxWidth: "calc(100vw - 32px)" }}
+        maskClosable
       >
-        <div className="sidesheet-theme">
+        <div className="px-4 pt-2 pb-4">
           <TableInfo data={tableData} />
         </div>
-      </SideSheet>
+      </Modal>
     </>
   );
 
