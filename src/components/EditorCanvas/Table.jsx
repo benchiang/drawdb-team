@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Action,
   Tab,
@@ -25,7 +25,6 @@ import {
   Button,
   ButtonGroup,
   Divider,
-  Input,
   Modal,
 } from "@douyinfe/semi-ui";
 import {
@@ -66,9 +65,6 @@ export default function Table({
   const [uqPanelKey, setUqPanelKey] = useState("");
   const [commentPanelKey, setCommentPanelKey] = useState("");
   const [showCommentCard, setShowCommentCard] = useState(false);
-  // 表名 onFocus 时的快照，用于 onBlur 构造 undo 记录
-  // 放在 Modal title 内（Semi UI 真正固定的 header 区），因此不使用 useState
-  const nameFocusRef = useRef("");
   const { layout } = useLayout();
   const {
     database,
@@ -518,45 +514,9 @@ export default function Table({
       </foreignObject>
       <Modal
         title={
-          <div className="flex items-center gap-2 pr-8">
-            <span className="font-semibold shrink-0">
-              {t("name")}:
-            </span>
-            <Input
-              value={tableData.name}
-              validateStatus={
-                tableData.name.trim() === "" ? "error" : "default"
-              }
-              placeholder={t("name")}
-              className="flex-1"
-              readonly={layout.readOnly}
-              onChange={(value) =>
-                updateTable(tableData.id, { name: value })
-              }
-              onFocus={(e) => {
-                nameFocusRef.current = e.target.value;
-              }}
-              onBlur={(e) => {
-                if (e.target.value === nameFocusRef.current) return;
-                setUndoStack((prev) => [
-                  ...prev,
-                  {
-                    action: Action.EDIT,
-                    element: ObjectType.TABLE,
-                    component: "self",
-                    tid: tableData.id,
-                    undo: { name: nameFocusRef.current },
-                    redo: { name: e.target.value },
-                    message: t("edit_table", {
-                      tableName: e.target.value,
-                      extra: "[name]",
-                    }),
-                  },
-                ]);
-                setRedoStack([]);
-              }}
-            />
-          </div>
+          <span className="font-semibold">
+            {t("edit_table", { extra: "", tableName: tableData.name })}
+          </span>
         }
         size="large"
         centered
@@ -584,9 +544,14 @@ export default function Table({
         }
         className="table-editor-modal"
         bodyStyle={{
+          // 用 height 而非 maxHeight，让内部 flex column 布局的
+          // h-full / flex-1 min-h-0 真正拿到确定的高度，
+          // 固定头部（名称输入）才能保持不动，主体才可独立滚动。
+          height: "calc(100vh - 320px)",
           maxHeight: "calc(100vh - 320px)",
           padding: 0,
-          overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
         }}
         style={{
           width: "880px",
@@ -595,18 +560,16 @@ export default function Table({
         }}
         maskClosable
       >
-        <div className="px-4 pt-2 pb-4">
-          <TableInfo
-            data={tableData}
-            indexPanelKey={indexPanelKey}
-            setIndexPanelKey={setIndexPanelKey}
-            uqPanelKey={uqPanelKey}
-            setUqPanelKey={setUqPanelKey}
-            commentPanelKey={commentPanelKey}
-            setCommentPanelKey={setCommentPanelKey}
-            showComment={showCommentCard}
-          />
-        </div>
+        <TableInfo
+          data={tableData}
+          indexPanelKey={indexPanelKey}
+          setIndexPanelKey={setIndexPanelKey}
+          uqPanelKey={uqPanelKey}
+          setUqPanelKey={setUqPanelKey}
+          commentPanelKey={commentPanelKey}
+          setCommentPanelKey={setCommentPanelKey}
+          showComment={showCommentCard}
+        />
       </Modal>
     </>
   );

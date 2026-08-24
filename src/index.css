@@ -108,29 +108,31 @@
 }
 
 /* 表编辑 Modal：始终保留可见的滚动条轨道 + 加宽 thumb，
-   避免 macOS overlay 模式下用户察觉不到可滚动区域 */
-.table-editor-modal .semi-modal-body::-webkit-scrollbar {
+   避免 macOS overlay 模式下用户察觉不到可滚动区域。
+   滚动发生在内层 .table-editor-modal-scrollable 容器，
+   Modal body 本身用 flex column 承担"固定头 + 滚动主体"布局。 */
+.table-editor-modal-scrollable::-webkit-scrollbar {
   width: 10px;
 }
 
-.table-editor-modal .semi-modal-body::-webkit-scrollbar-track {
+.table-editor-modal-scrollable::-webkit-scrollbar-track {
   background-color: rgba(var(--semi-grey-1), 0.6);
   opacity: 1;
 }
 
-.table-editor-modal .semi-modal-body::-webkit-scrollbar-thumb {
+.table-editor-modal-scrollable::-webkit-scrollbar-thumb {
   background-color: rgba(var(--semi-grey-3), 1);
   border-radius: 6px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 
-.table-editor-modal .semi-modal-body::-webkit-scrollbar-thumb:hover {
+.table-editor-modal-scrollable::-webkit-scrollbar-thumb:hover {
   background-color: rgba(var(--semi-grey-4), 1);
   background-clip: padding-box;
 }
 
-.table-editor-modal .semi-modal-body {
+.table-editor-modal-scrollable {
   scrollbar-color: rgba(var(--semi-grey-3), 1) rgba(var(--semi-grey-1), 0.6);
   scrollbar-width: thin;
 }
