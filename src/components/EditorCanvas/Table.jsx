@@ -524,17 +524,12 @@ export default function Table({
             open: !prev.open,
           }))
         }
-        onOk={() =>
-          setSelectedElement((prev) => ({
-            ...prev,
-            open: !prev.open,
-          }))
-        }
-        okText={t("done")}
-        cancelText={t("close")}
+        footer={null}
+        className="table-editor-modal"
         bodyStyle={{
-          maxHeight: "calc(100vh - 220px)",
+          maxHeight: "calc(100vh - 130px)",
           padding: 0,
+          overflowY: "auto",
         }}
         style={{ width: "880px", maxWidth: "calc(100vw - 32px)" }}
         maskClosable
