@@ -35,6 +35,7 @@ import {
   useUndoRedo,
 } from "../../hooks";
 import TableInfo from "../EditorSidePanel/TablesTab/TableInfo";
+import TableInfoFooter from "../EditorSidePanel/TablesTab/TableInfoFooter";
 import { useTranslation } from "react-i18next";
 import { resolveType } from "../../utils/customTypes";
 import { isRtl } from "../../i18n/utils/rtl";
@@ -58,6 +59,12 @@ export default function Table({
   setLinkingLine,
 }) {
   const [hoveredField, setHoveredField] = useState(null);
+  // Modal 内的可折叠面板状态：从 TableInfo 提升到这里，
+  // 让底部 footer（TableInfoFooter）也能控制面板展开。
+  const [indexPanelKey, setIndexPanelKey] = useState("");
+  const [uqPanelKey, setUqPanelKey] = useState("");
+  const [commentPanelKey, setCommentPanelKey] = useState("");
+  const [showCommentCard, setShowCommentCard] = useState(false);
   const { layout } = useLayout();
   const {
     database,
@@ -524,17 +531,38 @@ export default function Table({
             open: !prev.open,
           }))
         }
-        footer={null}
+        footer={
+          <TableInfoFooter
+            data={tableData}
+            onAddIndex={() => setIndexPanelKey("1")}
+            onAddUniqueConstraint={() => setUqPanelKey("1")}
+            onAddComment={() => {
+              setShowCommentCard(true);
+              setCommentPanelKey("1");
+            }}
+          />
+        }
         className="table-editor-modal"
         bodyStyle={{
-          height: "calc(100vh - 130px)",
+          maxHeight: "calc(100vh - 130px)",
           padding: 0,
-          overflow: "hidden",
+          overflowY: "auto",
         }}
         style={{ width: "880px", maxWidth: "calc(100vw - 32px)" }}
         maskClosable
       >
-        <TableInfo data={tableData} />
+        <div className="px-4 pt-2 pb-4">
+          <TableInfo
+            data={tableData}
+            indexPanelKey={indexPanelKey}
+            setIndexPanelKey={setIndexPanelKey}
+            uqPanelKey={uqPanelKey}
+            setUqPanelKey={setUqPanelKey}
+            commentPanelKey={commentPanelKey}
+            setCommentPanelKey={setCommentPanelKey}
+            showComment={showCommentCard}
+          />
+        </div>
       </Modal>
     </>
   );
