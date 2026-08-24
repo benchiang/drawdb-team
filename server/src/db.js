@@ -35,11 +35,13 @@ function migrate(db) {
       loaded_from_gist_id TEXT,
       last_modified TEXT NOT NULL,
       payload TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      deleted_at TEXT
     );
 
     CREATE INDEX IF NOT EXISTS idx_diagrams_owner ON diagrams(owner_id);
     CREATE INDEX IF NOT EXISTS idx_diagrams_last_modified ON diagrams(last_modified);
+    CREATE INDEX IF NOT EXISTS idx_diagrams_deleted_at ON diagrams(deleted_at);
 
     CREATE TABLE IF NOT EXISTS templates (
       id TEXT PRIMARY KEY,
@@ -67,6 +69,11 @@ function migrate(db) {
 
   // 兼容旧库：缺列就补上
   ensureColumn(db, "users", "role", "TEXT NOT NULL DEFAULT 'user'");
+  // 软删除：缺 deleted_at 列就补上
+  ensureColumn(db, "diagrams", "deleted_at", "TEXT");
+  db.exec(
+    `CREATE INDEX IF NOT EXISTS idx_diagrams_deleted_at ON diagrams(deleted_at);`,
+  );
   // 旧库 diagram_collaborators 没有 permission 列，迁移时补上并默认 'edit'
   ensureColumn(
     db,
