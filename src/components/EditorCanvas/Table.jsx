@@ -544,11 +544,15 @@ export default function Table({
         }
         className="table-editor-modal"
         bodyStyle={{
-          maxHeight: "calc(100vh - 130px)",
+          maxHeight: "calc(100vh - 320px)",
           padding: 0,
           overflowY: "auto",
         }}
-        style={{ width: "880px", maxWidth: "calc(100vw - 32px)" }}
+        style={{
+          width: "880px",
+          maxWidth: "calc(100vw - 32px)",
+          maxHeight: "calc(100vh - 200px)",
+        }}
         maskClosable
       >
         <div className="px-4 pt-2 pb-4">
