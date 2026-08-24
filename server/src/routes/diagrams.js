@@ -107,48 +107,54 @@ router.put("/:id", (req, res) => {
 // 软删除：把 deleted_at 标记为当前时间
 router.delete("/:id", (req, res) => {
   const db = getDb();
-  const role = diagramAccessOf(db, req.params.id, ownerOf(req));
-  if (role !== "owner") return res.status(403).json({ error: "owner_only" });
-  const result = db
-    .prepare(
-      `UPDATE diagrams SET deleted_at = datetime('now')
-        WHERE id = ? AND owner_id = ? AND deleted_at IS NULL`,
-    )
-    .run(req.params.id, ownerOf(req));
-  if (result.changes === 0) return res.status(404).json({ error: "not_found" });
+  const row = db
+    .prepare("SELECT * FROM diagrams WHERE id = ?")
+    .get(req.params.id);
+  if (!row) return res.status(404).json({ error: "not_found" });
+  if (row.owner_id !== ownerOf(req)) {
+    return res.status(403).json({ error: "owner_only" });
+  }
+  if (row.deleted_at) return res.status(404).json({ error: "not_found" });
+  db.prepare(
+    `UPDATE diagrams SET deleted_at = datetime('now')
+      WHERE id = ? AND owner_id = ? AND deleted_at IS NULL`,
+  ).run(req.params.id, ownerOf(req));
   res.status(204).end();
 });
 
 // 恢复：清掉 deleted_at
 router.post("/:id/restore", (req, res) => {
   const db = getDb();
-  const role = diagramAccessOf(db, req.params.id, ownerOf(req));
-  if (role !== "owner") return res.status(403).json({ error: "owner_only" });
-  const result = db
-    .prepare(
-      `UPDATE diagrams SET deleted_at = NULL
-        WHERE id = ? AND owner_id = ? AND deleted_at IS NOT NULL`,
-    )
-    .run(req.params.id, ownerOf(req));
-  if (result.changes === 0) return res.status(404).json({ error: "not_found" });
   const row = db
     .prepare("SELECT * FROM diagrams WHERE id = ?")
     .get(req.params.id);
+  if (!row) return res.status(404).json({ error: "not_found" });
+  if (row.owner_id !== ownerOf(req)) {
+    return res.status(403).json({ error: "owner_only" });
+  }
+  if (!row.deleted_at) return res.status(404).json({ error: "not_found" });
+  db.prepare(
+    `UPDATE diagrams SET deleted_at = NULL
+      WHERE id = ? AND owner_id = ? AND deleted_at IS NOT NULL`,
+  ).run(req.params.id, ownerOf(req));
   res.json({ ...rowToDiagram(row), accessRole: "owner" });
 });
 
 // 硬删除：仅在已软删后才允许（防误删）
 router.delete("/:id/permanent", (req, res) => {
   const db = getDb();
-  const role = diagramAccessOf(db, req.params.id, ownerOf(req));
-  if (role !== "owner") return res.status(403).json({ error: "owner_only" });
-  const result = db
-    .prepare(
-      `DELETE FROM diagrams
-        WHERE id = ? AND owner_id = ? AND deleted_at IS NOT NULL`,
-    )
-    .run(req.params.id, ownerOf(req));
-  if (result.changes === 0) return res.status(404).json({ error: "not_found" });
+  const row = db
+    .prepare("SELECT * FROM diagrams WHERE id = ?")
+    .get(req.params.id);
+  if (!row) return res.status(404).json({ error: "not_found" });
+  if (row.owner_id !== ownerOf(req)) {
+    return res.status(403).json({ error: "owner_only" });
+  }
+  if (!row.deleted_at) return res.status(404).json({ error: "not_found" });
+  db.prepare(
+    `DELETE FROM diagrams
+      WHERE id = ? AND owner_id = ? AND deleted_at IS NOT NULL`,
+  ).run(req.params.id, ownerOf(req));
   res.status(204).end();
 });
 
