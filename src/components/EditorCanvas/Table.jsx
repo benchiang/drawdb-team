@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Action,
   Tab,
@@ -66,8 +66,9 @@ export default function Table({
   const [uqPanelKey, setUqPanelKey] = useState("");
   const [commentPanelKey, setCommentPanelKey] = useState("");
   const [showCommentCard, setShowCommentCard] = useState(false);
-  // Modal 顶部表名 Input 在 onFocus 时刻的快照，用于 onBlur 时构造 undo 记录。
-  const [nameEditSnapshot, setNameEditSnapshot] = useState("");
+  // 表名 onFocus 时的快照，用于 onBlur 构造 undo 记录
+  // 放在 Modal title 内（Semi UI 真正固定的 header 区），因此不使用 useState
+  const nameFocusRef = useRef("");
   const { layout } = useLayout();
   const {
     database,
@@ -517,48 +518,44 @@ export default function Table({
       </foreignObject>
       <Modal
         title={
-          <div className="flex flex-col gap-1.5 pr-2">
-            <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              {t("modal_edit_table_title")}
+          <div className="flex items-center gap-2 pr-8">
+            <span className="font-semibold shrink-0">
+              {t("name")}:
             </span>
-            <div className="flex items-center gap-2">
-              <span className="shrink-0 text-sm text-zinc-700">
-                {t("name")}:
-              </span>
-              <Input
-                size="small"
-                value={tableData.name}
-                validateStatus={
-                  tableData.name.trim() === "" ? "error" : "default"
-                }
-                placeholder={t("name")}
-                className="flex-1"
-                readonly={layout.readOnly}
-                onChange={(value) =>
-                  updateTable(tableData.id, { name: value })
-                }
-                onFocus={(e) => setNameEditSnapshot(e.target.value)}
-                onBlur={(e) => {
-                  if (e.target.value === nameEditSnapshot) return;
-                  setUndoStack((prev) => [
-                    ...prev,
-                    {
-                      action: Action.EDIT,
-                      element: ObjectType.TABLE,
-                      component: "self",
-                      tid: tableData.id,
-                      undo: { name: nameEditSnapshot },
-                      redo: { name: e.target.value },
-                      message: t("edit_table", {
-                        tableName: e.target.value,
-                        extra: "[name]",
-                      }),
-                    },
-                  ]);
-                  setRedoStack([]);
-                }}
-              />
-            </div>
+            <Input
+              value={tableData.name}
+              validateStatus={
+                tableData.name.trim() === "" ? "error" : "default"
+              }
+              placeholder={t("name")}
+              className="flex-1"
+              readonly={layout.readOnly}
+              onChange={(value) =>
+                updateTable(tableData.id, { name: value })
+              }
+              onFocus={(e) => {
+                nameFocusRef.current = e.target.value;
+              }}
+              onBlur={(e) => {
+                if (e.target.value === nameFocusRef.current) return;
+                setUndoStack((prev) => [
+                  ...prev,
+                  {
+                    action: Action.EDIT,
+                    element: ObjectType.TABLE,
+                    component: "self",
+                    tid: tableData.id,
+                    undo: { name: nameFocusRef.current },
+                    redo: { name: e.target.value },
+                    message: t("edit_table", {
+                      tableName: e.target.value,
+                      extra: "[name]",
+                    }),
+                  },
+                ]);
+                setRedoStack([]);
+              }}
+            />
           </div>
         }
         size="large"
@@ -587,7 +584,7 @@ export default function Table({
         }
         className="table-editor-modal"
         bodyStyle={{
-          maxHeight: "calc(100vh - 360px)",
+          maxHeight: "calc(100vh - 320px)",
           padding: 0,
           overflowY: "auto",
         }}

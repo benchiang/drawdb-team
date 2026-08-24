@@ -236,7 +236,6 @@ const zh = {
     edit_note: "{{extra}} 编辑注释 {{noteTitle}}",
     delete_note: "删除注释 {{noteTitle}}",
     edit_table: "{{extra}} 编辑表格 {{tableName}}",
-    modal_edit_table_title: "编辑表格",
     delete_table: "删除表格 {{tableName}}",
     edit_type: "{{extra}} 编辑类型 {{typeName}}",
     delete_type: "删除类型 {{typeName}}",

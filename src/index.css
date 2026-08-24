@@ -107,40 +107,30 @@
   background-color: rgba(var(--semi-grey-4), 1);
 }
 
-/* 表编辑 Modal：固定 body 高度并锁住 overflow，
-   让唯一的滚动条只出现在 .table-info-fields-scroller 上，
-   卡片 / 名称 / 底部按钮区域均不会被滚动条覆盖 */
-.table-editor-modal .semi-modal-body {
-  height: calc(100vh - 130px);
-  max-height: calc(100vh - 130px);
-  overflow: hidden !important;
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-}
-
-.table-editor-modal .table-info-fields-scroller::-webkit-scrollbar {
+/* 表编辑 Modal：始终保留可见的滚动条轨道 + 加宽 thumb，
+   避免 macOS overlay 模式下用户察觉不到可滚动区域 */
+.table-editor-modal .semi-modal-body::-webkit-scrollbar {
   width: 10px;
 }
 
-.table-editor-modal .table-info-fields-scroller::-webkit-scrollbar-track {
+.table-editor-modal .semi-modal-body::-webkit-scrollbar-track {
   background-color: rgba(var(--semi-grey-1), 0.6);
   opacity: 1;
 }
 
-.table-editor-modal .table-info-fields-scroller::-webkit-scrollbar-thumb {
+.table-editor-modal .semi-modal-body::-webkit-scrollbar-thumb {
   background-color: rgba(var(--semi-grey-3), 1);
   border-radius: 6px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 
-.table-editor-modal .table-info-fields-scroller::-webkit-scrollbar-thumb:hover {
+.table-editor-modal .semi-modal-body::-webkit-scrollbar-thumb:hover {
   background-color: rgba(var(--semi-grey-4), 1);
   background-clip: padding-box;
 }
 
-.table-editor-modal .table-info-fields-scroller {
+.table-editor-modal .semi-modal-body {
   scrollbar-color: rgba(var(--semi-grey-3), 1) rgba(var(--semi-grey-1), 0.6);
   scrollbar-width: thin;
 }
