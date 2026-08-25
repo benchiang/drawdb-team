@@ -16,7 +16,7 @@ export default function Templates() {
     try {
       await templatesApi.remove(id);
       Toast.success("Template deleted");
-    } catch (err) {
+    } catch {
       Toast.error("Failed to delete template");
     }
   };

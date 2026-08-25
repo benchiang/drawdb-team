@@ -132,7 +132,7 @@ export default function Users() {
     try {
       const list = await usersApi.list();
       setItems(list);
-    } catch (err) {
+    } catch {
       Toast.error("加载用户列表失败");
     } finally {
       setLoading(false);

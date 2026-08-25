@@ -111,7 +111,7 @@ export default function Versions({ open, title, setTitle }) {
         if (databases[database].hasEnums) {
           setEnums(parsedDiagram.enums);
         }
-      } catch (e) {
+      } catch {
         Toast.error(t("failed_to_load_diagram"));
       } finally {
         setLoadingVersion(null);
@@ -168,7 +168,7 @@ export default function Versions({ open, title, setTitle }) {
           hasMore: res.pagination.hasMore,
         };
         saveCache(cacheRef);
-      } catch (e) {
+      } catch {
         Toast.error(t("oops_smth_went_wrong"));
       } finally {
         setIsLoading(false);
@@ -223,7 +223,7 @@ export default function Versions({ open, title, setTitle }) {
       saveCache(cacheRef);
 
       await getRevisions();
-    } catch (e) {
+    } catch {
       Toast.error(t("failed_to_record_version"));
     } finally {
       setIsRecording(false);

@@ -627,7 +627,7 @@ try {
     adminToken,
   );
   if (newU2.status !== 201) throw new Error("create bob failed");
-  const lastAdminDemote = await http_(
+  const _lastAdminDemote = await http_(
     "PATCH",
     `/api/users/${admin.user.id}`,
     { role: "user" },
@@ -646,7 +646,9 @@ try {
   for (const ext of ["", "-wal", "-shm"]) {
     try {
       fs.rmSync(path.join(__dirname, "..", "data", `test.sqlite${ext}`), { force: true });
-    } catch {}
+    } catch (_cleanupErr) {
+      // best-effort cleanup: missing files or permission errors are fine
+    }
   }
   process.exit(exitCode);
 }

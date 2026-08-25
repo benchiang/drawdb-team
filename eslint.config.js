@@ -50,11 +50,6 @@ export default [
       ...react.configs.recommended.rules,
       ...react.configs["jsx-runtime"].rules,
       ...reactHooks.configs.recommended.rules,
-      // 保持与旧配置一致：常量子组件允许 export
-      "react-refresh/only-export-components": [
-        "warn",
-        { allowConstantExport: true },
-      ],
       "react/prop-types": 0,
       "no-unused-vars": [
         "error",
@@ -64,6 +59,26 @@ export default [
           caughtErrorsIgnorePattern: "^_",
         },
       ],
+    },
+  },
+
+  // src/context/** 里同时导出 Provider 组件 + useXxx 钩子，
+  // react-refresh 的 only-export-components 规则会把它们判成
+  // "fast refresh 失效"。这是项目设计如此（每个 context 自包含
+  // 一个文件便于引用），与 HMR 性能有关但不影响正确性。关掉。
+  {
+    files: ["src/context/**/*.{js,jsx}"],
+    rules: {
+      "react-refresh/only-export-components": "off",
+    },
+  },
+
+  // Workspace.jsx 同时承载多个 context Provider + 业务组件，
+  // 同样属于设计权衡。
+  {
+    files: ["src/components/Workspace.jsx"],
+    rules: {
+      "react-refresh/only-export-components": "off",
     },
   },
 

@@ -153,7 +153,7 @@ export default function Modal({
       );
 
       applyImportedDiagram(diagramData);
-    } catch (e) {
+    } catch {
       setError({
         type: STATUS.ERROR,
         message: `Please check for syntax errors or let us know about the error.`,

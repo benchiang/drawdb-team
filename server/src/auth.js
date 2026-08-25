@@ -19,7 +19,7 @@ export function authRequired(req, res, next) {
   try {
     req.user = verifyToken(token);
     next();
-  } catch (err) {
+  } catch (_err) {
     return res.status(401).json({ error: "invalid_token" });
   }
 }

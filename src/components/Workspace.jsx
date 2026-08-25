@@ -370,7 +370,7 @@ export default function WorkSpace({ forcedDiagramId } = {}) {
       let template = null;
       try {
         template = await templatesApi.get(id);
-      } catch (err) {
+      } catch {
         template = null;
       }
       if (!template) {
