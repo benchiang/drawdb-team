@@ -122,6 +122,9 @@ export default function UniqueConstraintDetails({ data, fields, cid, tid }) {
                     component: "unique_constraint_delete",
                     tid: tid,
                     data: data,
+                    index: constraints.findIndex(
+                      (constraint) => constraint.id === cid,
+                    ),
                     message: t("edit_table", {
                       tableName: table.name,
                       extra: "[delete unique constraint]",
@@ -130,12 +133,7 @@ export default function UniqueConstraintDetails({ data, fields, cid, tid }) {
                 ]);
                 setRedoStack([]);
                 updateTable(tid, {
-                  uniqueConstraints: constraints
-                    .filter((e) => e.id !== cid)
-                    .map((e, j) => ({
-                      ...e,
-                      id: j,
-                    })),
+                  uniqueConstraints: constraints.filter((e) => e.id !== cid),
                 });
               }}
             >

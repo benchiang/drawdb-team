@@ -163,6 +163,7 @@ export default function IndexDetails({ data, fields, iid, tid }) {
                     component: "index_delete",
                     tid: tid,
                     data: data,
+                    index: table.indices.findIndex((index) => index.id === iid),
                     message: t("edit_table", {
                       tableName: table.name,
                       extra: "[delete index]",
@@ -171,12 +172,7 @@ export default function IndexDetails({ data, fields, iid, tid }) {
                 ]);
                 setRedoStack([]);
                 updateTable(tid, {
-                  indices: table.indices
-                    .filter((e) => e.id !== iid)
-                    .map((e, j) => ({
-                      ...e,
-                      id: j,
-                    })),
+                  indices: table.indices.filter((e) => e.id !== iid),
                 });
               }}
             >

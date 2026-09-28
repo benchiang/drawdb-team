@@ -290,9 +290,7 @@ export default function ControlPanel({
           });
         } else if (a.component === "index_add") {
           updateTable(a.tid, {
-            indices: table.indices
-              .filter((e) => e.id !== table.indices.length - 1)
-              .map((t, i) => ({ ...t, id: i })),
+            indices: table.indices.filter((e) => e.id !== a.iid),
           });
         } else if (a.component === "index") {
           updateTable(a.tid, {
@@ -307,16 +305,14 @@ export default function ControlPanel({
           });
         } else if (a.component === "index_delete") {
           const updatedIndices = table.indices.slice();
-          updatedIndices.splice(a.data.id, 0, a.data);
+          updatedIndices.splice(a.index, 0, a.data);
           updateTable(a.tid, {
-            indices: updatedIndices.map((t, i) => ({ ...t, id: i })),
+            indices: updatedIndices,
           });
         } else if (a.component === "unique_constraint_add") {
           const constraints = table.uniqueConstraints || [];
           updateTable(a.tid, {
-            uniqueConstraints: constraints
-              .filter((e) => e.id !== constraints.length - 1)
-              .map((t, i) => ({ ...t, id: i })),
+            uniqueConstraints: constraints.filter((e) => e.id !== a.cid),
           });
         } else if (a.component === "unique_constraint") {
           updateTable(a.tid, {
@@ -332,12 +328,9 @@ export default function ControlPanel({
           });
         } else if (a.component === "unique_constraint_delete") {
           const updatedConstraints = (table.uniqueConstraints || []).slice();
-          updatedConstraints.splice(a.data.id, 0, a.data);
+          updatedConstraints.splice(a.index, 0, a.data);
           updateTable(a.tid, {
-            uniqueConstraints: updatedConstraints.map((t, i) => ({
-              ...t,
-              id: i,
-            })),
+            uniqueConstraints: updatedConstraints,
           });
         } else if (a.component === "self") {
           updateTable(a.tid, a.undo);
@@ -504,14 +497,7 @@ export default function ControlPanel({
           });
         } else if (a.component === "index_add") {
           updateTable(a.tid, {
-            indices: [
-              ...table.indices,
-              {
-                id: table.indices.length,
-                name: `index_${table.indices.length}`,
-                fields: [],
-              },
-            ],
+            indices: [...table.indices, a.data],
           });
         } else if (a.component === "index") {
           updateTable(a.tid, {
@@ -526,21 +512,12 @@ export default function ControlPanel({
           });
         } else if (a.component === "index_delete") {
           updateTable(a.tid, {
-            indices: table.indices
-              .filter((e) => e.id !== a.data.id)
-              .map((t, i) => ({ ...t, id: i })),
+            indices: table.indices.filter((e) => e.id !== a.data.id),
           });
         } else if (a.component === "unique_constraint_add") {
           const constraints = table.uniqueConstraints || [];
           updateTable(a.tid, {
-            uniqueConstraints: [
-              ...constraints,
-              {
-                id: constraints.length,
-                name: `${table.name}_unique_${constraints.length}`,
-                fields: [],
-              },
-            ],
+            uniqueConstraints: [...constraints, a.data],
           });
         } else if (a.component === "unique_constraint") {
           updateTable(a.tid, {
@@ -556,9 +533,9 @@ export default function ControlPanel({
           });
         } else if (a.component === "unique_constraint_delete") {
           updateTable(a.tid, {
-            uniqueConstraints: (table.uniqueConstraints || [])
-              .filter((e) => e.id !== a.data.id)
-              .map((t, i) => ({ ...t, id: i })),
+            uniqueConstraints: (table.uniqueConstraints || []).filter(
+              (e) => e.id !== a.data.id,
+            ),
           });
         } else if (a.component === "self") {
           updateTable(a.tid, a.redo, false);

@@ -125,7 +125,8 @@ export default function TableInfoFooter({
         element: ObjectType.TABLE,
         component: "unique_constraint_add",
         tid: data.id,
-        uid: id,
+        cid: id,
+        data: newUnique,
         message: t("edit_table", {
           tableName: data.name,
           extra: "[add unique]",
@@ -156,6 +157,7 @@ export default function TableInfoFooter({
         component: "index_add",
         tid: data.id,
         iid: id,
+        data: newIndex,
         message: t("edit_table", {
           tableName: data.name,
           extra: "[add index]",

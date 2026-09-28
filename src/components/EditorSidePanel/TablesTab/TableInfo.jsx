@@ -202,11 +202,11 @@ export default function TableInfo({
               accordion
             >
               <Collapse.Panel header={t("indices")} itemKey="1">
-                {data.indices.map((idx, k) => (
+                {data.indices.map((idx) => (
                   <IndexDetails
-                    key={"index_" + k}
+                    key={"index_" + idx.id}
                     data={idx}
-                    iid={k}
+                    iid={idx.id}
                     tid={data.id}
                     fields={data.fields.map((e) => ({
                       value: e.name,
@@ -233,11 +233,11 @@ export default function TableInfo({
               accordion
             >
               <Collapse.Panel header={t("unique_constraints")} itemKey="1">
-                {data.uniqueConstraints.map((uc, k) => (
+                {data.uniqueConstraints.map((uc) => (
                   <UniqueConstraintDetails
-                    key={"unique_constraint_" + k}
+                    key={"unique_constraint_" + uc.id}
                     data={uc}
-                    cid={k}
+                    cid={uc.id}
                     tid={data.id}
                     fields={data.fields.map((e) => ({
                       value: e.name,
