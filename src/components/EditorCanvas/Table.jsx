@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   Action,
   Tab,
@@ -47,8 +47,6 @@ import {
   getVisibleFieldEntries,
   getVisibleFields,
   getRelationshipFields,
-  measureFieldRowWidth,
-  measureTableHeaderWidth,
 } from "../../utils/utils";
 
 export default function Table({
@@ -85,28 +83,27 @@ export default function Table({
     setBulkSelectedElements,
   } = useSelect();
 
-  // 用 Canvas measureText 测每行实际像素宽度 + 显式累加 gap/padding/border，
-  // 完全脱离 DOM 渲染，真实字段行布局见 measureFieldRowWidth 内注释。
+  const tableRef = useRef(null);
+  const [measuredWidth, setMeasuredWidth] = useState(0);
   const visibleFields = useMemo(
     () => getVisibleFields(tableData, relationships),
     [tableData, relationships],
   );
 
-  const measuredWidth = useMemo(() => {
-    if (typeof document === "undefined") return settings.tableWidth;
-    const headerW = measureTableHeaderWidth(tableData.name);
-    let maxW = headerW;
-    visibleFields.forEach((f) => {
-      const w = measureFieldRowWidth({
-        displayName: f.displayName,
-        name: f.name,
-        type: f.type,
-        size: f.size,
-      });
-      if (w > maxW) maxW = w;
-    });
-    return Math.max(maxW, settings.tableWidth);
-  }, [tableData.name, visibleFields, settings.tableWidth]);
+  useLayoutEffect(() => {
+    const node = tableRef.current;
+    if (!node) return;
+    // 内容按 max-content 自然布局；读取未受 SVG 缩放影响的尺寸，
+    // 同步 foreignObject，并随内容、字体和设置变化重新测量。
+    const measure = () => {
+      const width = Math.ceil(parseFloat(getComputedStyle(node).width));
+      if (width > 0) setMeasuredWidth(width);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [tableData.hidden]);
 
   const borderColor = useMemo(
     () => (settings.mode === "light" ? "border-zinc-300" : "border-zinc-600"),
@@ -270,10 +267,12 @@ export default function Table({
         onPointerDown={onPointerDown}
       >
         <div
+          ref={tableRef}
           onDoubleClick={openEditor}
           style={{
             direction: "ltr",
-            width: tableWidth,
+            width: "max-content",
+            minWidth: settings.tableWidth,
           }}
           className={`border-2 hover:border-dashed hover:border-blue-500
                select-none rounded-lg ${
@@ -301,7 +300,7 @@ export default function Table({
               <div className="px-3 whitespace-nowrap flex-1">
                 {tableData.name}
               </div>
-              <div className="hidden group-hover:flex items-center shrink-0 pe-2">
+              <div className="invisible group-hover:visible flex items-center shrink-0 pe-2">
                 <ButtonGroup
                   type="tertiary"
                   size="small"
@@ -412,7 +411,10 @@ export default function Table({
               </div>
             </div>
             {tableData.comment && settings.showComments && (
-              <div className="text-xs px-3 line-clamp-5">
+              <div
+                className="text-xs px-3 line-clamp-5"
+                style={{ contain: "inline-size" }}
+              >
                 {tableData.comment}
               </div>
             )}
@@ -659,23 +661,30 @@ export default function Table({
               </span>
             </span>
           </div>
-          <div className="text-zinc-400 shrink-0">
-            {hoveredField === index ? (
-              <Button
-                theme="solid"
-                size="small"
-                style={{
-                  backgroundColor: "#d42020b3",
-                }}
-                icon={<IconMinus />}
-                disabled={layout.readOnly}
-                onClick={() => {
-                  if (layout.readOnly) return;
-                  deleteField(fieldData, tableData.id);
-                }}
-              />
-            ) : settings.showDataTypes ? (
-              <div className="flex gap-1 items-center">
+          {/* 类型与悬停按钮共用网格位置，按两者较宽值占位，避免悬停时宽度跳变。 */}
+          <div className="text-zinc-400 shrink-0 grid">
+            <Button
+              className={`col-start-1 row-start-1 justify-self-end ${
+                hoveredField === index ? "" : "invisible"
+              }`}
+              theme="solid"
+              size="small"
+              style={{
+                backgroundColor: "#d42020b3",
+              }}
+              icon={<IconMinus />}
+              disabled={layout.readOnly}
+              onClick={() => {
+                if (layout.readOnly) return;
+                deleteField(fieldData, tableData.id);
+              }}
+            />
+            {settings.showDataTypes && (
+              <div
+                className={`col-start-1 row-start-1 flex gap-1 items-center whitespace-nowrap ${
+                  hoveredField === index ? "invisible" : ""
+                }`}
+              >
                 {fieldData.primary && <IconKeyStroked />}
                 {!fieldData.notNull && <span className="font-mono">?</span>}
                 <span
@@ -695,11 +704,14 @@ export default function Table({
                       : "")}
                 </span>
               </div>
-            ) : null}
+            )}
           </div>
         </div>
         {showFieldComment && (
-          <div className="ms-3 px-3 pb-3">
+          <div
+            className="ms-3 px-3 pb-3"
+            style={{ contain: "inline-size" }}
+          >
             <div
               className={`text-xs line-clamp-2 ${settings.mode === "light" ? "text-zinc-600" : "text-zinc-200"}`}
             >
